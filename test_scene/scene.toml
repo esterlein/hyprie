@@ -1,0 +1,1499 @@
+ambient_rgb = [0.2, 0.2, 0.2]
+
+# models
+
+[[entity]]
+guid = "0x0000000000001001"
+name = "dragon_0"
+[entity.transform]
+position = [1.0, 0.0, 0.0]
+rotation = [0.0, -0.5, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001002"
+name = "dragon_1"
+[entity.transform]
+position = [-3.0, 0.0, 4.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001200"
+name = "dragon_rnd_0"
+[entity.transform]
+position = [12.4, 1.1, -18.7]
+rotation = [0.23, 0.91, -0.12, 0.31]
+scale = [0.7, 0.7, 0.7]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001201"
+name = "dragon_rnd_1"
+[entity.transform]
+position = [-21.8, 0.4, 9.3]
+rotation = [0.61, -0.14, 0.77, 0.12]
+scale = [1.4, 1.4, 1.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001202"
+name = "dragon_rnd_2"
+[entity.transform]
+position = [5.6, 2.7, 14.9]
+rotation = [-0.33, 0.48, 0.79, 0.19]
+scale = [0.9, 1.2, 0.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001203"
+name = "dragon_rnd_3"
+[entity.transform]
+position = [-9.2, 3.1, -6.4]
+rotation = [0.02, 0.66, 0.24, 0.71]
+scale = [1.8, 1.8, 1.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001204"
+name = "dragon_rnd_4"
+[entity.transform]
+position = [18.1, 0.2, 3.5]
+rotation = [0.54, 0.21, -0.43, 0.69]
+scale = [0.6, 0.6, 0.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001205"
+name = "dragon_rnd_5"
+[entity.transform]
+position = [-4.7, 4.9, 22.6]
+rotation = [-0.71, 0.18, 0.41, 0.53]
+scale = [1.1, 0.9, 1.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001206"
+name = "dragon_rnd_6"
+[entity.transform]
+position = [0.3, 6.2, -11.8]
+rotation = [0.44, -0.62, 0.21, 0.61]
+scale = [2.0, 2.0, 2.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001207"
+name = "dragon_rnd_7"
+[entity.transform]
+position = [-16.9, 1.8, -2.1]
+rotation = [0.09, 0.37, 0.88, 0.27]
+scale = [0.8, 1.5, 0.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001208"
+name = "dragon_rnd_8"
+[entity.transform]
+position = [7.9, 3.3, -24.4]
+rotation = [0.58, 0.02, 0.78, 0.23]
+scale = [1.6, 1.6, 1.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001209"
+name = "dragon_rnd_9"
+[entity.transform]
+position = [-27.3, 2.6, 15.2]
+rotation = [-0.12, 0.84, 0.31, 0.43]
+scale = [0.5, 0.5, 0.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000120A"
+name = "dragon_rnd_10"
+[entity.transform]
+position = [14.6, 5.7, 8.1]
+rotation = [0.67, 0.49, -0.21, 0.52]
+scale = [1.3, 1.0, 0.7]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000120B"
+name = "dragon_rnd_11"
+[entity.transform]
+position = [-6.1, 0.9, -19.5]
+rotation = [0.31, -0.72, 0.55, 0.28]
+scale = [2.2, 2.2, 2.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001300"
+name = "dragon_rnd_32"
+[entity.transform]
+position = [48.2, -6.4, -71.9]
+rotation = [0.91, -0.11, 0.34, -0.19]
+scale = [3.4, 0.6, 2.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001301"
+name = "dragon_rnd_33"
+[entity.transform]
+position = [-63.7, 12.8, 44.1]
+rotation = [-0.22, 0.88, 0.41, 0.02]
+scale = [0.4, 2.8, 1.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001302"
+name = "dragon_rnd_34"
+[entity.transform]
+position = [5.9, 18.3, -92.6]
+rotation = [0.47, 0.51, -0.68, 0.25]
+scale = [4.5, 4.5, 4.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001303"
+name = "dragon_rnd_35"
+[entity.transform]
+position = [-88.4, -3.2, -11.7]
+rotation = [0.03, -0.94, 0.18, 0.28]
+scale = [0.2, 0.2, 6.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001304"
+name = "dragon_rnd_36"
+[entity.transform]
+position = [91.1, 27.6, 13.5]
+rotation = [-0.56, 0.33, 0.72, 0.22]
+scale = [1.1, 3.7, 0.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001305"
+name = "dragon_rnd_37"
+[entity.transform]
+position = [-14.8, -22.1, 106.3]
+rotation = [0.79, 0.44, 0.08, -0.41]
+scale = [5.2, 1.3, 2.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001306"
+name = "dragon_rnd_38"
+[entity.transform]
+position = [120.4, 4.9, -36.8]
+rotation = [-0.67, 0.12, -0.71, 0.16]
+scale = [0.15, 0.15, 0.15]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001307"
+name = "dragon_rnd_39"
+[entity.transform]
+position = [-101.7, 39.5, -58.4]
+rotation = [0.28, 0.73, 0.57, 0.25]
+scale = [6.5, 6.5, 0.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001308"
+name = "dragon_rnd_40"
+[entity.transform]
+position = [33.6, -31.2, 84.9]
+rotation = [-0.48, -0.52, 0.61, 0.35]
+scale = [2.4, 0.9, 4.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001309"
+name = "dragon_rnd_41"
+[entity.transform]
+position = [-129.9, 8.7, 22.4]
+rotation = [0.14, 0.19, 0.95, -0.18]
+scale = [0.3, 7.2, 0.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000130A"
+name = "dragon_rnd_42"
+[entity.transform]
+position = [76.5, 52.1, -104.6]
+rotation = [0.62, -0.61, -0.18, 0.45]
+scale = [8.0, 1.0, 1.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000130B"
+name = "dragon_rnd_43"
+[entity.transform]
+position = [-41.2, -44.6, -97.3]
+rotation = [-0.39, 0.81, -0.06, 0.43]
+scale = [1.7, 5.9, 2.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000130C"
+name = "dragon_rnd_44"
+[entity.transform]
+position = [6.1, 71.8, 131.4]
+rotation = [0.88, 0.01, 0.44, -0.17]
+scale = [9.0, 9.0, 9.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000130D"
+name = "dragon_rnd_45"
+[entity.transform]
+position = [-155.6, -12.9, 61.2]
+rotation = [0.05, -0.66, 0.71, 0.23]
+scale = [0.12, 0.12, 12.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000130E"
+name = "dragon_rnd_46"
+[entity.transform]
+position = [142.3, 19.4, 77.8]
+rotation = [-0.74, 0.28, 0.43, 0.42]
+scale = [3.1, 6.8, 1.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000130F"
+name = "dragon_rnd_47"
+[entity.transform]
+position = [-19.5, 96.3, -141.7]
+rotation = [0.36, 0.59, -0.72, 0.07]
+scale = [10.5, 0.5, 0.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001500"
+name = "dragon_rnd_c_000"
+[entity.transform]
+position = [12.3, 3.4, -9.7]
+rotation = [0.21, 0.74, -0.11, 0.63]
+scale = [0.8, 1.6, 0.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001501"
+name = "dragon_rnd_c_001"
+[entity.transform]
+position = [-14.6, -2.1, 7.9]
+rotation = [-0.33, 0.52, 0.77, 0.12]
+scale = [1.9, 0.7, 1.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001502"
+name = "dragon_rnd_c_002"
+[entity.transform]
+position = [6.1, 8.4, 15.2]
+rotation = [0.61, -0.18, 0.44, 0.64]
+scale = [2.4, 2.4, 0.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001503"
+name = "dragon_rnd_c_003"
+[entity.transform]
+position = [-9.8, 1.2, -18.6]
+rotation = [0.09, 0.88, -0.41, 0.18]
+scale = [0.4, 3.2, 1.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001504"
+name = "dragon_rnd_c_004"
+[entity.transform]
+position = [21.7, -4.9, 3.3]
+rotation = [-0.57, 0.29, 0.71, 0.29]
+scale = [1.2, 0.9, 2.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001505"
+name = "dragon_rnd_c_005"
+[entity.transform]
+position = [-3.5, 6.6, -12.1]
+rotation = [0.46, -0.62, 0.21, 0.60]
+scale = [3.6, 0.5, 0.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001506"
+name = "dragon_rnd_c_006"
+[entity.transform]
+position = [0.8, -7.3, 19.4]
+rotation = [0.71, 0.44, 0.08, -0.54]
+scale = [1.0, 4.1, 1.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001507"
+name = "dragon_rnd_c_007"
+[entity.transform]
+position = [-18.2, 9.7, 1.6]
+rotation = [-0.12, 0.96, 0.19, 0.14]
+scale = [0.3, 0.3, 5.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001600"
+name = "dragon_rnd_w_000"
+[entity.transform]
+position = [34.7, -11.2, -42.5]
+rotation = [0.63, -0.14, 0.41, 0.64]
+scale = [1.9, 0.6, 2.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001601"
+name = "dragon_rnd_w_001"
+[entity.transform]
+position = [-27.3, 18.6, 9.4]
+rotation = [-0.22, 0.88, 0.37, 0.17]
+scale = [0.5, 3.8, 0.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001602"
+name = "dragon_rnd_w_002"
+[entity.transform]
+position = [6.8, -24.1, 41.2]
+rotation = [0.71, 0.42, -0.18, 0.54]
+scale = [2.6, 2.6, 0.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001603"
+name = "dragon_rnd_w_003"
+[entity.transform]
+position = [-44.9, 3.1, -7.7]
+rotation = [0.08, -0.96, 0.21, 0.16]
+scale = [0.3, 0.3, 6.7]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001604"
+name = "dragon_rnd_w_004"
+[entity.transform]
+position = [19.2, 27.8, -31.4]
+rotation = [-0.54, 0.33, 0.71, 0.28]
+scale = [1.1, 4.9, 0.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001605"
+name = "dragon_rnd_w_005"
+[entity.transform]
+position = [-2.4, -36.7, 22.9]
+rotation = [0.79, 0.44, 0.05, -0.42]
+scale = [5.8, 1.1, 2.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001606"
+name = "dragon_rnd_w_006"
+[entity.transform]
+position = [48.1, 6.9, 4.2]
+rotation = [-0.67, 0.12, -0.71, 0.17]
+scale = [0.2, 0.2, 0.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001607"
+name = "dragon_rnd_w_007"
+[entity.transform]
+position = [-31.6, 41.5, -18.9]
+rotation = [0.28, 0.73, 0.57, 0.25]
+scale = [6.2, 6.2, 0.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001608"
+name = "dragon_rnd_w_008"
+[entity.transform]
+position = [11.4, -48.9, 37.6]
+rotation = [-0.48, -0.52, 0.61, 0.35]
+scale = [2.1, 0.8, 4.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001609"
+name = "dragon_rnd_w_009"
+[entity.transform]
+position = [-49.2, 14.7, 12.8]
+rotation = [0.14, 0.19, 0.95, -0.18]
+scale = [0.4, 8.1, 0.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000160A"
+name = "dragon_rnd_w_010"
+[entity.transform]
+position = [25.6, 33.1, -49.8]
+rotation = [0.62, -0.61, -0.18, 0.45]
+scale = [9.4, 1.0, 1.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000160B"
+name = "dragon_rnd_w_011"
+[entity.transform]
+position = [-18.7, -44.3, -38.1]
+rotation = [-0.39, 0.81, -0.06, 0.43]
+scale = [1.4, 6.3, 2.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001700"
+name = "dragon_rnd_m_000"
+[entity.transform]
+position = [18.4, -6.2, 27.1]
+rotation = [0.31, 0.64, -0.42, 0.56]
+scale = [1.2, 1.3, 1.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001701"
+name = "dragon_rnd_m_001"
+[entity.transform]
+position = [-22.7, 9.5, -14.8]
+rotation = [-0.44, 0.52, 0.61, 0.39]
+scale = [0.9, 1.0, 1.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001702"
+name = "dragon_rnd_m_002"
+[entity.transform]
+position = [7.3, 14.2, -31.6]
+rotation = [0.58, -0.27, 0.71, 0.30]
+scale = [1.4, 1.2, 1.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001703"
+name = "dragon_rnd_m_003"
+[entity.transform]
+position = [-35.1, -4.6, 6.9]
+rotation = [0.09, 0.87, -0.41, 0.22]
+scale = [1.0, 0.9, 1.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001704"
+name = "dragon_rnd_m_004"
+[entity.transform]
+position = [29.5, 21.1, 18.3]
+rotation = [-0.61, 0.34, 0.55, 0.45]
+scale = [1.6, 1.5, 1.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001705"
+name = "dragon_rnd_m_005"
+[entity.transform]
+position = [-11.9, -18.4, 33.7]
+rotation = [0.71, 0.19, -0.46, 0.49]
+scale = [0.8, 0.9, 0.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001706"
+name = "dragon_rnd_m_006"
+[entity.transform]
+position = [3.6, 26.8, -9.1]
+rotation = [0.42, -0.58, 0.61, 0.34]
+scale = [1.1, 1.2, 1.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001707"
+name = "dragon_rnd_m_007"
+[entity.transform]
+position = [-28.4, 4.2, -26.5]
+rotation = [0.15, 0.91, 0.29, 0.25]
+scale = [1.3, 1.4, 1.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001708"
+name = "dragon_rnd_m_008"
+[entity.transform]
+position = [34.8, -12.9, -3.7]
+rotation = [-0.52, 0.63, -0.41, 0.38]
+scale = [0.95, 1.05, 1.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001709"
+name = "dragon_rnd_m_009"
+[entity.transform]
+position = [-6.4, 31.5, 21.9]
+rotation = [0.66, 0.44, 0.17, -0.57]
+scale = [1.7, 1.6, 1.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000170A"
+name = "dragon_rnd_m_010"
+[entity.transform]
+position = [14.7, -27.3, 12.8]
+rotation = [-0.31, 0.74, 0.53, 0.26]
+scale = [1.1, 1.0, 1.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000170B"
+name = "dragon_rnd_m_011"
+[entity.transform]
+position = [-33.9, 17.4, -19.6]
+rotation = [0.24, -0.68, 0.62, 0.30]
+scale = [0.9, 1.0, 0.95]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000170C"
+name = "dragon_rnd_m_012"
+[entity.transform]
+position = [25.1, 8.3, -34.7]
+rotation = [0.49, 0.51, -0.57, 0.44]
+scale = [1.3, 1.2, 1.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000170D"
+name = "dragon_rnd_m_013"
+[entity.transform]
+position = [-18.2, -32.4, -6.1]
+rotation = [-0.57, 0.28, 0.74, 0.20]
+scale = [1.0, 1.1, 1.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000170E"
+name = "dragon_rnd_m_014"
+[entity.transform]
+position = [38.6, 3.9, 5.4]
+rotation = [0.73, -0.11, 0.42, 0.51]
+scale = [1.6, 1.5, 1.7]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000170F"
+name = "dragon_rnd_m_015"
+[entity.transform]
+position = [-2.8, 36.7, -24.3]
+rotation = [0.18, 0.84, -0.39, 0.34]
+scale = [0.85, 0.9, 0.95]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001710"
+name = "dragon_rnd_h_016"
+[entity.transform]
+position = [22.8, -9.6, 31.4]
+rotation = [0.18, 0.67, -0.21, 0.69]
+scale = [3.8, 4.4, 4.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001711"
+name = "dragon_rnd_h_017"
+[entity.transform]
+position = [-35.6, 14.2, -8.7]
+rotation = [-0.41, 0.52, 0.63, 0.40]
+scale = [0.7, 0.9, 0.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001712"
+name = "dragon_rnd_h_018"
+[entity.transform]
+position = [6.9, 21.5, -27.3]
+rotation = [0.55, -0.24, 0.71, 0.35]
+scale = [2.2, 2.8, 2.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001713"
+name = "dragon_rnd_h_019"
+[entity.transform]
+position = [-12.4, -18.1, 38.2]
+rotation = [0.69, 0.16, -0.47, 0.53]
+scale = [4.6, 3.9, 4.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001714"
+name = "dragon_rnd_h_020"
+[entity.transform]
+position = [33.2, 6.1, -19.8]
+rotation = [-0.58, 0.31, 0.61, 0.44]
+scale = [1.2, 1.6, 1.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001715"
+name = "dragon_rnd_h_021"
+[entity.transform]
+position = [-4.7, 34.8, 16.3]
+rotation = [0.64, 0.45, 0.12, -0.61]
+scale = [0.4, 0.5, 0.45]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001716"
+name = "dragon_rnd_h_022"
+[entity.transform]
+position = [15.9, -32.6, 7.2]
+rotation = [-0.28, 0.75, 0.52, 0.29]
+scale = [3.1, 2.6, 2.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001717"
+name = "dragon_rnd_h_023"
+[entity.transform]
+position = [-28.9, 11.4, -33.7]
+rotation = [0.22, -0.66, 0.64, 0.35]
+scale = [1.9, 2.3, 2.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001718"
+name = "dragon_rnd_h_024"
+[entity.transform]
+position = [38.7, -5.2, 3.9]
+rotation = [0.72, -0.10, 0.41, 0.55]
+scale = [4.9, 4.2, 4.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001719"
+name = "dragon_rnd_h_025"
+[entity.transform]
+position = [-1.8, 37.9, -21.6]
+rotation = [0.16, 0.85, -0.37, 0.33]
+scale = [2.7, 3.2, 2.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000171A"
+name = "dragon_rnd_h_026"
+[entity.transform]
+position = [27.4, 18.8, 24.1]
+rotation = [-0.60, 0.36, 0.53, 0.49]
+scale = [1.0, 1.3, 1.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000171B"
+name = "dragon_rnd_h_027"
+[entity.transform]
+position = [-19.6, -27.8, -5.4]
+rotation = [-0.55, 0.29, 0.74, 0.21]
+scale = [4.1, 4.8, 4.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000171C"
+name = "dragon_rnd_h_028"
+[entity.transform]
+position = [9.1, 7.6, -38.5]
+rotation = [0.47, 0.53, -0.56, 0.43]
+scale = [0.9, 1.2, 1.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000171D"
+name = "dragon_rnd_h_029"
+[entity.transform]
+position = [-33.1, 2.8, 6.6]
+rotation = [0.08, 0.88, -0.40, 0.23]
+scale = [2.0, 1.6, 1.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000171E"
+name = "dragon_rnd_h_030"
+[entity.transform]
+position = [3.7, -14.9, 19.5]
+rotation = [0.33, 0.62, -0.44, 0.56]
+scale = [3.5, 4.2, 3.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000171F"
+name = "dragon_rnd_h_031"
+[entity.transform]
+position = [-24.3, 26.1, -12.2]
+rotation = [-0.46, 0.57, 0.54, 0.41]
+scale = [0.6, 0.75, 0.65]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001720"
+name = "dragon_rnd_h_032"
+[entity.transform]
+position = [19.8, 29.4, -2.9]
+rotation = [0.59, -0.19, 0.69, 0.38]
+scale = [1.7, 2.1, 1.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001721"
+name = "dragon_rnd_h_033"
+[entity.transform]
+position = [-7.2, -36.8, 11.1]
+rotation = [0.70, 0.14, -0.50, 0.50]
+scale = [4.7, 3.8, 4.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001722"
+name = "dragon_rnd_h_034"
+[entity.transform]
+position = [36.1, 12.7, 14.6]
+rotation = [-0.62, 0.34, 0.57, 0.41]
+scale = [0.5, 0.6, 0.55]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001723"
+name = "dragon_rnd_h_035"
+[entity.transform]
+position = [-16.4, 5.9, -24.7]
+rotation = [0.20, 0.78, 0.28, 0.52]
+scale = [2.9, 3.5, 3.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001724"
+name = "dragon_rnd_h_036"
+[entity.transform]
+position = [11.6, -21.2, -9.3]
+rotation = [-0.32, 0.74, 0.55, 0.21]
+scale = [1.1, 1.4, 1.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001725"
+name = "dragon_rnd_h_037"
+[entity.transform]
+position = [-38.8, -3.7, 28.4]
+rotation = [0.50, 0.48, -0.63, 0.35]
+scale = [4.0, 4.9, 4.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001726"
+name = "dragon_rnd_h_038"
+[entity.transform]
+position = [24.5, 3.2, -33.6]
+rotation = [0.11, 0.90, -0.35, 0.22]
+scale = [2.3, 2.0, 2.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001727"
+name = "dragon_rnd_h_039"
+[entity.transform]
+position = [-10.8, 16.9, 2.5]
+rotation = [-0.56, 0.34, 0.71, 0.22]
+scale = [0.8, 1.0, 0.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001728"
+name = "dragon_rnd_h_040"
+[entity.transform]
+position = [1.2, -6.8, 39.1]
+rotation = [0.73, 0.19, -0.44, 0.48]
+scale = [3.2, 3.8, 3.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001729"
+name = "dragon_rnd_h_041"
+[entity.transform]
+position = [-26.6, 31.2, -28.1]
+rotation = [0.24, -0.70, 0.61, 0.20]
+scale = [4.4, 3.6, 4.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000172A"
+name = "dragon_rnd_h_042"
+[entity.transform]
+position = [32.9, -28.4, 20.2]
+rotation = [-0.49, 0.62, -0.38, 0.48]
+scale = [1.4, 1.8, 1.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000172B"
+name = "dragon_rnd_h_043"
+[entity.transform]
+position = [-3.9, 22.6, 33.8]
+rotation = [0.66, 0.41, 0.15, -0.60]
+scale = [0.35, 0.45, 0.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000172C"
+name = "dragon_rnd_h_044"
+[entity.transform]
+position = [17.1, 9.3, -16.5]
+rotation = [0.60, -0.23, 0.72, 0.26]
+scale = [2.6, 3.0, 2.7]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000172D"
+name = "dragon_rnd_h_045"
+[entity.transform]
+position = [-21.7, -11.6, 7.4]
+rotation = [0.10, 0.86, -0.39, 0.31]
+scale = [4.8, 4.0, 4.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000172E"
+name = "dragon_rnd_h_046"
+[entity.transform]
+position = [39.6, 1.7, 10.8]
+rotation = [-0.62, 0.35, 0.57, 0.39]
+scale = [1.9, 2.3, 2.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000172F"
+name = "dragon_rnd_h_047"
+[entity.transform]
+position = [-14.1, 28.9, -39.2]
+rotation = [0.26, -0.66, 0.67, 0.20]
+scale = [1.0, 0.8, 0.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001730"
+name = "dragon_rnd_h_048"
+[entity.transform]
+position = [5.4, -33.7, -22.6]
+rotation = [-0.34, 0.73, 0.55, 0.22]
+scale = [3.9, 4.6, 4.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001731"
+name = "dragon_rnd_h_049"
+[entity.transform]
+position = [-37.9, 7.1, 19.6]
+rotation = [0.51, 0.50, -0.60, 0.36]
+scale = [2.2, 1.9, 2.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001732"
+name = "dragon_rnd_h_050"
+[entity.transform]
+position = [28.8, 24.6, -12.7]
+rotation = [0.20, 0.79, 0.26, 0.52]
+scale = [0.55, 0.7, 0.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001733"
+name = "dragon_rnd_h_051"
+[entity.transform]
+position = [-8.5, -19.3, 29.7]
+rotation = [0.71, 0.15, -0.49, 0.49]
+scale = [3.0, 2.5, 2.8]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001734"
+name = "dragon_rnd_h_052"
+[entity.transform]
+position = [13.9, 3.8, 37.2]
+rotation = [0.74, 0.18, -0.44, 0.46]
+scale = [4.5, 3.7, 4.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001735"
+name = "dragon_rnd_h_053"
+[entity.transform]
+position = [-29.1, 19.5, 2.1]
+rotation = [-0.45, 0.54, 0.60, 0.38]
+scale = [1.3, 1.6, 1.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001736"
+name = "dragon_rnd_h_054"
+[entity.transform]
+position = [37.3, -12.1, -6.9]
+rotation = [-0.50, 0.61, -0.37, 0.49]
+scale = [2.8, 3.3, 3.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001737"
+name = "dragon_rnd_h_055"
+[entity.transform]
+position = [-1.1, 12.9, -17.4]
+rotation = [0.58, -0.24, 0.73, 0.27]
+scale = [4.2, 5.0, 4.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001738"
+name = "dragon_rnd_h_056"
+[entity.transform]
+position = [20.6, -26.5, 14.1]
+rotation = [0.12, 0.86, -0.38, 0.32]
+scale = [0.8, 0.6, 0.7]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001739"
+name = "dragon_rnd_h_057"
+[entity.transform]
+position = [-23.8, 33.6, -4.3]
+rotation = [-0.56, 0.35, 0.70, 0.23]
+scale = [2.4, 2.0, 2.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000173A"
+name = "dragon_rnd_h_058"
+[entity.transform]
+position = [8.2, 28.1, -35.9]
+rotation = [0.26, -0.69, 0.63, 0.24]
+scale = [3.6, 4.3, 3.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000173B"
+name = "dragon_rnd_h_059"
+[entity.transform]
+position = [-34.5, -6.9, 35.1]
+rotation = [0.49, 0.51, -0.58, 0.41]
+scale = [1.6, 1.3, 1.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000173C"
+name = "dragon_rnd_h_060"
+[entity.transform]
+position = [30.1, 10.7, 22.9]
+rotation = [-0.60, 0.35, 0.55, 0.47]
+scale = [4.9, 4.1, 4.5]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000173D"
+name = "dragon_rnd_h_061"
+[entity.transform]
+position = [-12.9, -34.1, -10.8]
+rotation = [0.69, 0.17, -0.49, 0.49]
+scale = [0.45, 0.35, 0.4]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000173E"
+name = "dragon_rnd_h_062"
+[entity.transform]
+position = [2.6, 6.9, -4.8]
+rotation = [0.31, 0.66, -0.41, 0.54]
+scale = [2.1, 2.6, 2.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000173F"
+name = "dragon_rnd_h_063"
+[entity.transform]
+position = [-39.2, 24.2, -21.1]
+rotation = [-0.43, 0.56, 0.59, 0.38]
+scale = [3.3, 3.9, 3.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001740"
+name = "dragon_rnd_h_064"
+[entity.transform]
+position = [16.2, -3.9, 9.7]
+rotation = [0.57, -0.21, 0.72, 0.33]
+scale = [1.0, 1.2, 1.1]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001741"
+name = "dragon_rnd_h_065"
+[entity.transform]
+position = [-20.4, 15.1, 39.4]
+rotation = [0.71, 0.19, -0.45, 0.50]
+scale = [4.0, 4.7, 4.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001742"
+name = "dragon_rnd_h_066"
+[entity.transform]
+position = [39.1, -22.6, -30.4]
+rotation = [-0.50, 0.63, -0.36, 0.47]
+scale = [2.7, 3.2, 2.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001743"
+name = "dragon_rnd_h_067"
+[entity.transform]
+position = [-6.6, 29.7, 26.2]
+rotation = [0.64, 0.44, 0.13, -0.61]
+scale = [1.8, 2.1, 1.9]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001744"
+name = "dragon_rnd_h_068"
+[entity.transform]
+position = [10.7, -28.8, 34.7]
+rotation = [0.72, 0.16, -0.47, 0.49]
+scale = [0.9, 0.75, 0.85]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001745"
+name = "dragon_rnd_h_069"
+[entity.transform]
+position = [-31.4, 4.6, -1.2]
+rotation = [0.07, 0.89, -0.39, 0.23]
+scale = [4.6, 3.8, 4.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001746"
+name = "dragon_rnd_h_070"
+[entity.transform]
+position = [26.9, 36.1, -17.9]
+rotation = [0.23, -0.71, 0.63, 0.22]
+scale = [2.0, 2.4, 2.2]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001747"
+name = "dragon_rnd_h_071"
+[entity.transform]
+position = [-18.1, -9.8, -37.6]
+rotation = [0.51, 0.50, -0.61, 0.37]
+scale = [1.2, 1.5, 1.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x0000000000001748"
+name = "dragon_rnd_h_072"
+[entity.transform]
+position = [4.8, 12.4, 12.9]
+rotation = [-0.58, 0.33, 0.72, 0.20]
+scale = [3.7, 4.5, 4.0]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x0000000000001749"
+name = "dragon_rnd_h_073"
+[entity.transform]
+position = [-25.7, -24.9, 18.6]
+rotation = [0.67, 0.18, -0.51, 0.51]
+scale = [0.6, 0.45, 0.55]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000174A"
+name = "dragon_rnd_h_074"
+[entity.transform]
+position = [33.4, 18.1, 6.2]
+rotation = [-0.61, 0.35, 0.56, 0.43]
+scale = [4.3, 5.0, 4.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000174B"
+name = "dragon_rnd_h_075"
+[entity.transform]
+position = [-9.3, 2.1, -29.8]
+rotation = [0.58, -0.23, 0.73, 0.28]
+scale = [2.8, 2.3, 2.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000174C"
+name = "dragon_rnd_h_076"
+[entity.transform]
+position = [21.3, -36.2, -6.1]
+rotation = [-0.30, 0.76, 0.52, 0.25]
+scale = [1.5, 1.9, 1.6]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000174D"
+name = "dragon_rnd_h_077"
+[entity.transform]
+position = [-36.7, 13.2, 31.9]
+rotation = [0.71, 0.17, -0.48, 0.49]
+scale = [3.4, 4.0, 3.7]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+[[entity]]
+guid = "0x000000000000174E"
+name = "dragon_rnd_h_078"
+[entity.transform]
+position = [12.7, 26.4, -23.2]
+rotation = [0.26, -0.67, 0.66, 0.22]
+scale = [0.85, 1.05, 0.95]
+[entity.model]
+mesh_path = "../test_scene/dragon_0.glb"
+
+[[entity]]
+guid = "0x000000000000174F"
+name = "dragon_rnd_h_079"
+[entity.transform]
+position = [-2.2, -16.7, 4.9]
+rotation = [0.33, 0.64, -0.43, 0.55]
+scale = [4.7, 3.9, 4.3]
+[entity.model]
+mesh_path = "../test_scene/dragon_1.glb"
+
+
+# camera
+
+[[entity]]
+guid = "0x0000000000002001"
+name = "main_camera"
+[entity.transform]
+position = [0.0, 1.5, 6.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.camera]
+fov_deg = 60.0
+znear = 0.1
+zfar = 200.0
+active = true
+
+
+# lights
+
+[[entity]]
+guid = "0x0000000000003001"
+name = "dir_sun"
+[entity.transform]
+position = [0.0, 2.0, 0.0]
+rotation = [0.0, 0.707, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 0
+color_rgb = [1.0, 1.0, 1.0]
+intensity = 1.0
+range = 500.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003002"
+name = "dir_fill"
+[entity.transform]
+position = [0.0, 2.0, 0.0]
+rotation = [0.0, -0.707, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 0
+color_rgb = [1.0, 1.0, 1.0]
+intensity = 0.3
+range = 500.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003004"
+name = "point_front"
+[entity.transform]
+position = [0.0, 5.0, 1.5]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 1
+color_rgb = [0.2, 0.6, 1.0]
+intensity = 10.0
+range = 3.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003009"
+name = "spot_back_rim"
+[entity.transform]
+position = [0.0, 1.0, -2.0]
+rotation = [0.0, 1.0, 0.0, 0.0]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 2
+color_rgb = [1.0, 1.0, 0.9]
+intensity = 2.0
+range = 4.0
+inner_deg = 25.0
+outer_deg = 35.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003010"
+name = "point_warm_right"
+[entity.transform]
+position = [6.5, 2.2, 3.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 1
+color_rgb = [1.0, 0.75, 0.55]
+intensity = 6.0
+range = 6.5
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003011"
+name = "point_cool_left"
+[entity.transform]
+position = [-7.0, 2.6, 1.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 1
+color_rgb = [0.55, 0.75, 1.0]
+intensity = 5.0
+range = 7.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003012"
+name = "point_green_back"
+[entity.transform]
+position = [0.0, 2.0, -8.5]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 1
+color_rgb = [0.55, 1.0, 0.65]
+intensity = 4.5
+range = 7.5
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003013"
+name = "point_magenta_front"
+[entity.transform]
+position = [0.0, 2.4, 8.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 1
+color_rgb = [1.0, 0.55, 0.95]
+intensity = 4.0
+range = 7.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003014"
+name = "spot_top_down"
+[entity.transform]
+position = [0.0, 9.0, 0.0]
+rotation = [0.707, 0.0, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 2
+color_rgb = [1.0, 0.95, 0.85]
+intensity = 5.0
+range = 14.0
+inner_deg = 18.0
+outer_deg = 28.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003015"
+name = "spot_side_rim_r"
+[entity.transform]
+position = [10.0, 3.0, -3.0]
+rotation = [0.0, -0.707, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 2
+color_rgb = [0.95, 0.85, 1.0]
+intensity = 3.5
+range = 12.0
+inner_deg = 20.0
+outer_deg = 32.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003016"
+name = "spot_side_rim_l"
+[entity.transform]
+position = [-10.0, 3.0, -3.0]
+rotation = [0.0, 0.707, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 2
+color_rgb = [0.85, 0.95, 1.0]
+intensity = 3.0
+range = 12.0
+inner_deg = 20.0
+outer_deg = 34.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003017"
+name = "point_low_bounce"
+[entity.transform]
+position = [2.0, 0.6, 2.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 1
+color_rgb = [1.0, 0.9, 0.75]
+intensity = 2.5
+range = 5.0
+enabled = true
+

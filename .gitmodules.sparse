@@ -1,0 +1,17 @@
+imports/metapool	/mtp/
+imports/metapool	/container/
+imports/metapool	/mtp_memory.hpp
+imports/sokol	/sokol_app.h
+imports/sokol	/sokol_gfx.h
+imports/sokol	/sokol_glue.h
+imports/sokol	/sokol_log.h
+imports/sokol	/sokol_time.h
+imports/sokol	/sokol_args.h
+imports/sokol	/sokol_audio.h
+imports/stb	/stb_image.h
+imports/stb	/stb_image_write.h
+imports/stb	/stb_truetype.h
+imports/nuklear	/nuklear.h
+imports/cgltf	/cgltf.h
+imports/toml	/toml.hpp
+imports/glm	/glm/

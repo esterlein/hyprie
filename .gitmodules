@@ -1,0 +1,23 @@
+[submodule "imports/metapool"]
+	path = imports/metapool
+	url = git@github.com:esterlein/metapool.git
+[submodule "imports/sokol"]
+	path = imports/sokol
+	url = git@github.com:floooh/sokol.git
+[submodule "imports/stb"]
+	path = imports/stb
+	url = git@github.com:nothings/stb.git
+[submodule "imports/nuklear"]
+	path = imports/nuklear
+	url = git@github.com:Immediate-Mode-UI/Nuklear.git
+[submodule "imports/cgltf"]
+	path = imports/cgltf
+	url = git@github.com:jkuhlmann/cgltf.git
+[submodule "imports/toml"]
+	path = imports/toml
+	url = git@github.com:marzer/tomlplusplus.git
+[submodule "imports/glm"]
+	path = imports/glm
+	url = git@github.com:g-truc/glm.git
+	branch = master
+
