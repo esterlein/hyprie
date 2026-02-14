@@ -9,9 +9,7 @@ void Scene::clear()
 	m_mat_templates.clear();
 	m_scene_primitives.clear();
 
-	m_ambient_rgb[0] = 0.0f;
-	m_ambient_rgb[1] = 0.0f;
-	m_ambient_rgb[2] = 0.0f;
+	m_ambient_rgb = {0.0f, 0.0f, 0.0f};
 }
 
 void Scene::index(ecs::Entity entity, uint64_t guid)

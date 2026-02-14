@@ -7,7 +7,7 @@
 template <typename MtpSet>
 struct MetapoolNuklearAllocator
 {
-	using Metapool = std::remove_reference_t<decltype(mtp::get_allocator<MtpSet>())>;
+	using Metapool = std::remove_reference_t<decltype(mtp::get_tls_allocator<MtpSet>())>;
 
 	static void* alloc_fn(nk_handle handle, void*, nk_size size)
 	{
@@ -26,7 +26,7 @@ struct MetapoolNuklearAllocator
 	static nk_allocator make()
 	{
 		nk_allocator nk_metapool {};
-		nk_metapool.userdata.ptr = mtp::get_allocator<MtpSet>(mtp::as_ptr);
+		nk_metapool.userdata.ptr = mtp::get_tls_allocator<MtpSet>(mtp::as_ptr);
 		nk_metapool.alloc        = &MetapoolNuklearAllocator<MtpSet>::alloc_fn;
 		nk_metapool.free         = &MetapoolNuklearAllocator<MtpSet>::free_fn;
 		return nk_metapool;

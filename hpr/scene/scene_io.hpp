@@ -2,7 +2,6 @@
 
 #include <cstdio>
 #include <string>
-#include <cstdint>
 #include <variant>
 #include <optional>
 #include <string_view>
@@ -12,8 +11,11 @@
 #define TOML_ENABLE_FORMATTERS 1
 
 #include "toml.hpp"
+
 #include "math.hpp"
+#include "hprint.hpp"
 #include "mtp_memory.hpp"
+
 #include "scene_data.hpp"
 #include "scene_io_data.hpp"
 #include "log.hpp"

@@ -63,6 +63,25 @@ void Renderer::frame()
 	sg_commit();
 
 	clear_queues();
+
+
+static uint64_t frame_count = 0;
+static auto last_time = std::chrono::steady_clock::now();
+
+++frame_count;
+
+auto now = std::chrono::steady_clock::now();
+auto elapsed = std::chrono::duration<double>(now - last_time).count();
+
+if (elapsed >= 1.0) {
+	double fps = frame_count / elapsed;
+	std::printf("fps: %.1f (%.2f ms)\n", fps, 1000.0 / fps);
+	std::fflush(stdout);
+
+	frame_count = 0;
+	last_time = now;
+}
+
 }
 
 

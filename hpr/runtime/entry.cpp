@@ -22,7 +22,7 @@ static std::unique_ptr<GlobalContext> global_ctx;
 
 void init()
 {
-	mtp::init<mtp::default_set>();
+	mtp::init_tls<mtp::default_set>();
 	hpr::log::set_level(hpr::log::LogLevel::debug);
 
 	sg_desc gfx_desc {};
@@ -51,7 +51,7 @@ void cleanup()
 
 	sg_shutdown();
 
-	mtp::get_allocator<mtp::default_set>().reset();
+	mtp::get_tls_allocator<mtp::default_set>().reset();
 }
 
 void event(const sapp_event* event)

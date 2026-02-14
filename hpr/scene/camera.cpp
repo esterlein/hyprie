@@ -5,11 +5,11 @@ namespace hpr::scn {
 
 
 Camera::Camera()
-	: position   {0.0f, 0.0f, 3.0f}
+	: position   {0.0f, 0.0f, 0.0f}
 	, yaw        {0.0f}
 	, pitch      {0.0f}
-	, move_speed {3.0f}
-	, mouse_sens {0.002f}
+	, move_speed {40.0f}
+	, mouse_sens {0.0025f}
 {}
 
 

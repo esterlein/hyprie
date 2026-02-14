@@ -1,4 +1,4 @@
-ambient_rgb = [0.2, 0.2, 0.2]
+ambient_rgb = [0.4, 0.4, 0.4]
 
 # models
 
@@ -1309,8 +1309,8 @@ mesh_path = "../test_scene/dragon_1.glb"
 guid = "0x0000000000002001"
 name = "main_camera"
 [entity.transform]
-position = [0.0, 1.5, 6.0]
-rotation = [0.0, 0.0, 0.0, 1.0]
+position = [-25.0, 65.0, 65.0]
+rotation = [-0.3605453, -0.1698397, -0.0669452, 0.9147021]
 scale = [1.0, 1.0, 1.0]
 [entity.camera]
 fov_deg = 60.0

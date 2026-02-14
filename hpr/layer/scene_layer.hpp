@@ -15,6 +15,7 @@
 
 #include "camera.hpp"
 #include "renderer.hpp"
+#include "scheduler.hpp"
 #include "render_forge.hpp"
 #include "asset_keeper.hpp"
 #include "input_binding.hpp"
@@ -61,6 +62,8 @@ public:
 	void set_event_queue(EventQueue& queue) override
 	{ m_event_queue = &queue; }
 
+	static void build_model_draw_cmds(void* job_input_ptr);
+
 	void process_commands(CmdStream::Reader reader) override;
 
 	edt::InspectorSnapshot selection_properties() const override;
@@ -81,6 +84,8 @@ private:
 	scn::Scene  m_scene;
 	scn::Camera m_camera_controller;
 	EventQueue* m_event_queue;
+
+	job::Scheduler m_scheduler;
 
 	scn::Selection m_selection {};
 

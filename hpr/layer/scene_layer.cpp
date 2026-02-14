@@ -17,6 +17,56 @@
 namespace hpr {
 
 
+namespace cfg {
+
+	inline constexpr uint32_t job_grain = 64U;
+
+} // hpr::cfg
+
+
+struct FrustumPlane
+{
+	vec3  normal;
+	vec3  abs_normal;
+	float w;
+};
+
+
+struct ModelDrawInstance
+{
+	ecs::Entity entity;
+
+	const ecs::ModelComponent* model;
+
+	mat4 mtx_world;
+	vec3 aabb_center;
+	vec3 aabb_half;
+
+	float world_units_per_px;
+};
+
+
+struct ModelDrawCmdJobSlice
+{
+	uint32_t begin;
+	uint32_t end;
+
+	const ModelDrawInstance* instances;
+	uint32_t                 instance_count;
+
+	const mtp::vault<scn::ScenePrimitive, mtp::default_set>* scene_primitives;
+
+	const FrustumPlane* frustum_planes;
+	uint32_t            frustum_plane_count;
+
+	uint32_t layer_index;
+
+	ecs::Entity selected_entity;
+
+	mtp::slag<rdr::SceneDrawCommand, mtp::default_set>* draw_cmds;
+};
+
+
 SceneLayer::SceneLayer(
 	ECSRegistry&            ecs_registry,
 	res::AssetKeeper&       asset_keeper,
@@ -33,7 +83,26 @@ SceneLayer::SceneLayer(
 	, m_binding      {input_binding}
 	, m_resolver     {resolver}
 	, m_scene_path   {scene_path}
-{}
+{
+	uint32_t worker_thread_count = std::thread::hardware_concurrency();
+
+	if (worker_thread_count == 0) {
+		worker_thread_count = 1;
+	}
+	else if (worker_thread_count > 1) {
+		worker_thread_count -= 1;
+	}
+
+	if (worker_thread_count > 8) {
+		worker_thread_count = 8;
+	}
+
+
+	worker_thread_count = 1;
+
+
+	m_scheduler.init(worker_thread_count);
+}
 
 
 void SceneLayer::on_attach()
@@ -77,7 +146,7 @@ bool SceneLayer::on_event(Event& event)
 
 bool SceneLayer::on_actions(std::span<const Action> actions)
 {
-	bool consumed = false;
+	bool action_consumed = false;
 
 	for (const Action& action : actions) {
 		switch (action.kind) {
@@ -149,14 +218,14 @@ bool SceneLayer::on_actions(std::span<const Action> actions)
 			event->selection.submesh   = m_selection.submesh;
 			event->emitter = this;
 
-			consumed = true;
+			action_consumed = true;
 		}
 		break;
 
 		default: break;
 		}
 	}
-	return false;
+	return action_consumed;
 }
 
 
@@ -198,7 +267,7 @@ void SceneLayer::on_update(float delta_time)
 	}
 
 	if (m_move_forward != 0.0f || m_move_right != 0.0f || m_move_up != 0.0f) {
-		const float move_step = 3.0f * delta_time;
+		const float move_step = m_camera_controller.move_speed * delta_time;
 
 		m_camera_controller.position += forward   * (move_step * m_move_forward);
 		m_camera_controller.position += right_vec * (move_step * m_move_right);
@@ -230,29 +299,23 @@ void SceneLayer::on_update(float delta_time)
 }
 
 
+
 void SceneLayer::on_submit(rdr::Renderer& renderer, uint32_t layer_index)
 {
 	m_renderer.set_context(FrameContext {m_draw_view, m_draw_view_light_set});
 
 	const auto& scene_primitives = m_scene.scene_primitives();
 
-	struct CullingPlane {
-		vec3  normal;
-		vec3  abs_normal;
-		float w;
-	};
+	std::array<FrustumPlane, math::frustum_plane_count> culling_planes;
 
-	std::array<CullingPlane, math::frustum_plane_count> culling_planes;
-
-	for (size_t i = 0; i < culling_planes.size(); ++i) {
-		const vec4& plane = m_draw_view.frustum[i];
-		culling_planes[i] = {
+	for (size_t plane_index = 0; plane_index < culling_planes.size(); ++plane_index) {
+		const vec4& plane = m_draw_view.frustum[plane_index];
+		culling_planes[plane_index] = {
 			vec3(plane.x, plane.y, plane.z),
 			glm::abs(vec3(plane.x, plane.y, plane.z)),
 			plane.w
 		};
 	}
-
 
 	/* tiles */
 
@@ -307,7 +370,8 @@ void SceneLayer::on_submit(rdr::Renderer& renderer, uint32_t layer_index)
 			if (chunk_drawable.dirty) {
 
 				auto* chunk = m_scene.tilefield().find_chunk(chunk_drawable.coord_hash);
-				HPR_ASSERT_MSG(chunk, "missing tile chunk for drawable hash");
+				HPR_ASSERT_MSG(chunk,
+				   "missing tile chunk for drawable hash");
 
 				m_render_forge.update_tilemap_texture(
 					chunk_drawable.tilemap,
@@ -337,77 +401,169 @@ void SceneLayer::on_submit(rdr::Renderer& renderer, uint32_t layer_index)
 		}
 	}
 
-
 	/* models */
 
+	mtp::slag<ModelDrawInstance, mtp::default_set> model_draw_instances;
+
 	m_registry.template scan<ecs::ModelComponent, ecs::TransformComponent, ecs::BoundComponent>(
-		[this, &renderer, &scene_primitives, layer_index, &culling_planes](
+		[&model_draw_instances, &renderer](
 			ecs::Entity entity,
 			ecs::ModelComponent& model,
 			const ecs::TransformComponent& transform,
-			const ecs::BoundComponent& bound
+			const ecs::BoundComponent& aabb
 		)
-	{
-		const vec3 aabb_center = bound.world_center;
-		const vec3 aabb_half   = bound.world_half;
+		{
+			const float world_units_per_px =
+				renderer.world_size_per_pixel(aabb.world_center);
 
-		for (const auto& plane : culling_planes) {
-
-			const float aabb_proj_radius =
-				plane.abs_normal.x * aabb_half.x +
-				plane.abs_normal.y * aabb_half.y +
-				plane.abs_normal.z * aabb_half.z;
-
-			const float signed_distance = glm::dot(plane.normal, aabb_center) + plane.w;
-
-			if (signed_distance < -aabb_proj_radius) {
-				return;
-			}
+			model_draw_instances.emplace_back(ModelDrawInstance {
+				.entity             = entity,
+				.model              = &model,
+				.mtx_world          = transform.world,
+				.aabb_center        = aabb.world_center,
+				.aabb_half          = aabb.world_half,
+				.world_units_per_px = world_units_per_px
+			});
 		}
+	);
 
-		const float world_units_per_pixel = renderer.world_size_per_pixel(aabb_center);
+	const uint32_t model_instance_count = static_cast<uint32_t>(model_draw_instances.size());
+	if (model_instance_count == 0) {
+		return;
+	}
 
-		if (world_units_per_pixel > 0.0f) {
-			const float aabb_sphere_radius = glm::length(aabb_half);
-			const float proj_diameter_px = (2.0f * aabb_sphere_radius) / world_units_per_pixel;
+	const uint32_t job_slice_count = (model_instance_count + cfg::job_grain - 1) / cfg::job_grain;
 
-			if (proj_diameter_px < 2.0f) {
-				return;
-			}
+	mtp::slag<ModelDrawCmdJobSlice, mtp::default_set> draw_cmd_job_slices;
+	draw_cmd_job_slices.resize(job_slice_count);
+
+	mtp::slag<mtp::slag<rdr::SceneDrawCommand, mtp::default_set>, mtp::default_set> slice_draw_cmds;
+	slice_draw_cmds.resize(job_slice_count);
+
+	for (uint32_t job_slice_idx = 0; job_slice_idx < job_slice_count; ++job_slice_idx) {
+
+		slice_draw_cmds[job_slice_idx].reserve(cfg::job_grain * 2);
+
+		draw_cmd_job_slices[job_slice_idx].instances           = model_draw_instances.data();
+		draw_cmd_job_slices[job_slice_idx].instance_count      = model_instance_count;
+		draw_cmd_job_slices[job_slice_idx].scene_primitives    = &scene_primitives;
+		draw_cmd_job_slices[job_slice_idx].frustum_planes      = culling_planes.data();
+		draw_cmd_job_slices[job_slice_idx].frustum_plane_count = static_cast<uint32_t>(culling_planes.size());
+		draw_cmd_job_slices[job_slice_idx].layer_index         = layer_index;
+		draw_cmd_job_slices[job_slice_idx].selected_entity     = m_selection.entity;
+		draw_cmd_job_slices[job_slice_idx].draw_cmds           = &slice_draw_cmds[job_slice_idx];
+	}
+
+	job::JobLatch job_latch;
+
+	m_scheduler.dispatch_range(
+		job_latch,
+		&build_model_draw_cmds,
+		model_instance_count,
+		cfg::job_grain,
+		draw_cmd_job_slices.data()
+	);
+
+	job_latch.wait();
+
+	for (uint32_t job_slice_idx = 0; job_slice_idx < job_slice_count; ++job_slice_idx) {
+		for (const auto& draw_cmd : slice_draw_cmds[job_slice_idx]) {
+			renderer.scene_queue().push(draw_cmd);
 		}
-
-		for (uint32_t i = 0; i < model.submesh_count; ++i) {
-			const auto& primitive_item = scene_primitives[model.submesh_first + i];
-			const uint32_t base = static_cast<uint32_t>(entity);
-
-			const uint64_t sort_key =
-				(static_cast<uint64_t>(layer_index) << 56) |
-				(static_cast<uint64_t>(base) & 0x0000000000FFFFFFULL);
-
-			uint8_t flags = 0;
-			if (entity == m_selection.entity) {
-				flags |= static_cast<uint8_t>(rdr::SceneDrawCmdFlag::Selected);
-			}
-
-			const rdr::SceneDrawCommand draw_command {
-				.mesh        = primitive_item.mesh,
-				.submesh_idx = primitive_item.submesh_idx,
-				.material    = primitive_item.material,
-				.sort_key    = sort_key,
-				.layer_index = layer_index,
-				.mtx_M       = transform.world,
-				.flags       = flags
-			};
-
-			renderer.scene_queue().push(draw_command);
-		}
-	});
+	}
 }
 
 
 void SceneLayer::on_result(Event& event)
 {
 	(void) event;
+}
+
+
+void SceneLayer::build_model_draw_cmds(void* slice_raw)
+{
+	auto* slice = static_cast<ModelDrawCmdJobSlice*>(slice_raw);
+
+	auto& slice_draw_cmds = *slice->draw_cmds;
+	slice_draw_cmds.clear();
+
+	const ModelDrawInstance* model_draw_instances = slice->instances;
+
+	for (uint32_t instance_idx = slice->begin; instance_idx < slice->end; ++instance_idx) {
+
+		const ModelDrawInstance& model_instance = model_draw_instances[instance_idx];
+
+		const vec3 aabb_center = model_instance.aabb_center;
+		const vec3 aabb_half   = model_instance.aabb_half;
+
+		bool is_culled = false;
+
+		for (uint32_t plane_idx = 0; plane_idx < slice->frustum_plane_count; ++plane_idx) {
+
+			const auto& plane = slice->frustum_planes[plane_idx];
+
+			const float aabb_proj_radius =
+				plane.abs_normal.x * aabb_half.x +
+				plane.abs_normal.y * aabb_half.y +
+				plane.abs_normal.z * aabb_half.z;
+
+			const float signed_distance =
+				glm::dot(plane.normal, aabb_center) + plane.w;
+
+			if (signed_distance < -aabb_proj_radius) {
+				is_culled = true;
+				break;
+			}
+		}
+
+		if (is_culled) {
+			continue;
+		}
+
+		const float world_units_per_px =
+			model_instance.world_units_per_px;
+
+		if (world_units_per_px > 0.0f) {
+
+			const float aabb_sphere_radius = glm::length(aabb_half);
+			const float proj_diameter_px = (2.0f * aabb_sphere_radius) / world_units_per_px;
+
+			if (proj_diameter_px < 2.0f) {
+				continue;
+			}
+		}
+
+		const ecs::Entity entity = model_instance.entity;
+		const ecs::ModelComponent& model = *model_instance.model;
+		const auto& scene_primitives = *slice->scene_primitives;
+
+		const uint64_t sort_key =
+			(static_cast<uint64_t>(slice->layer_index) << 56) |
+			(static_cast<uint64_t>(entity) & 0x0000000000FFFFFFULL);
+
+		uint8_t flags = 0;
+		if (entity == slice->selected_entity) {
+			flags |= static_cast<uint8_t>(rdr::SceneDrawCmdFlag::Selected);
+		}
+
+		for (uint32_t submesh_index = 0; submesh_index < model.submesh_count; ++submesh_index) {
+
+			const auto& primitive =
+				scene_primitives[model.submesh_first + submesh_index];
+
+			const rdr::SceneDrawCommand draw_cmd {
+				.mesh        = primitive.mesh,
+				.submesh_idx = primitive.submesh_idx,
+				.material    = primitive.material,
+				.sort_key    = sort_key,
+				.layer_index = slice->layer_index,
+				.mtx_M       = model_instance.mtx_world,
+				.flags       = flags
+			};
+
+			slice_draw_cmds.emplace_back(draw_cmd);
+		}
+	}
 }
 
 

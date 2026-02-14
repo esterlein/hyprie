@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-
 #include "math.hpp"
+#include "hprint.hpp"
+
 #include "entity.hpp"
 #include "render_data.hpp"
 #include "light_common.hpp"

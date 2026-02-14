@@ -14,7 +14,7 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
 
 if(NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE Debug CACHE STRING "build type" FORCE)
+	set(CMAKE_BUILD_TYPE Release CACHE STRING "build type" FORCE)
 endif()
 
 file(GLOB SHADER_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/shaders/*.glsl")
@@ -82,6 +82,7 @@ target_include_directories(hyprie PRIVATE
 	"${CMAKE_SOURCE_DIR}/hpr/resource"
 	"${CMAKE_SOURCE_DIR}/hpr/runtime"
 	"${CMAKE_SOURCE_DIR}/hpr/scene"
+	"${CMAKE_SOURCE_DIR}/hpr/thread"
 	"${CMAKE_SOURCE_DIR}/hpr/ui"
 
 	"${CMAKE_SOURCE_DIR}/imports/metapool"
