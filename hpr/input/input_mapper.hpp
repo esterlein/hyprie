@@ -29,8 +29,15 @@ public:
 			current_actions.push_back({ActionKind::Dolly, payload});
 		}
 
-		const bool pan_combo = input_state.mouse_middle || (m_binding.pan_mmb_shift_rmb && input_state.key_shift && input_state.mouse_right);
-		const bool orbit_combo = m_binding.orbit_rmb && input_state.mouse_right && !input_state.key_shift && !input_state.mouse_middle;
+		const bool pan_combo =
+			input_state.mouse_middle ||
+			(m_binding.pan_mmb_shift_rmb && input_state.key_shift && input_state.mouse_right);
+
+		const bool orbit_combo =
+			m_binding.orbit_rmb     &&
+			input_state.mouse_right &&
+			!input_state.key_shift  &&
+			!input_state.mouse_middle;
 
 		if (pan_combo && (input_state.mouse_dx != 0.0f || input_state.mouse_dy != 0.0f)) {
 			const float sx = input_state.mouse_dx;
@@ -99,6 +106,10 @@ public:
 		if (input_state.key_f6_press) {
 			DebugToggleAssetAction payload {};
 			current_actions.push_back({ActionKind::DebugToggleAsset, payload});
+		}
+		if (input_state.key_f9_press) {
+			ToggleCameraModeAction payload {};
+			current_actions.push_back({ActionKind::ToggleCameraMode, payload});
 		}
 
 

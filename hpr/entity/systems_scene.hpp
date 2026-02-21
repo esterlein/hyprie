@@ -2,11 +2,11 @@
 
 #include "math.hpp"
 
-#include "camera.hpp"
 #include "entity.hpp"
 #include "ecs_registry.hpp"
 #include "draw_view_data.hpp"
 #include "components_scene.hpp"
+#include "camera_controller.hpp"
 
 
 namespace hpr::ecs {
@@ -45,7 +45,9 @@ struct TranslateSystem
 
 		const ecs::HierarchyComponent* hierarchy = registry.template get<ecs::HierarchyComponent>(selected_entity);
 		if (hierarchy && hierarchy->parent != ecs::invalid_entity) {
-			const ecs::TransformComponent* parent_transform = registry.template get<ecs::TransformComponent>(hierarchy->parent);
+
+			const ecs::TransformComponent* parent_transform =
+				registry.template get<ecs::TransformComponent>(hierarchy->parent);
 
 			if (parent_transform) {
 				const mat3 parent_linear     = mat3(parent_transform->world);
@@ -63,13 +65,19 @@ struct TranslateSystem
 			mat4 parent_world = mat4(1.0f);
 
 			if (hierarchy && hierarchy->parent != ecs::invalid_entity) {
-				const ecs::TransformComponent* parent_transform = registry.template get<ecs::TransformComponent>(hierarchy->parent);
+				const ecs::TransformComponent* parent_transform =
+					registry.template get<ecs::TransformComponent>(hierarchy->parent);
+
 				if (parent_transform) {
 					parent_world = parent_transform->world;
 				}
 			}
 
-			const mat4 local_matrix = glm::translate(mat4(1.0f), transform->position) * glm::mat4_cast(transform->rotation) * glm::scale(mat4(1.0f), transform->scale);
+			const mat4 local_matrix =
+				glm::translate(mat4(1.0f), transform->position) *
+				glm::mat4_cast(transform->rotation)             *
+				glm::scale(mat4(1.0f), transform->scale);
+
 			const mat4 world_matrix = parent_world * local_matrix;
 			const vec4 origin_local = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -98,7 +106,11 @@ struct HierarchySystem
 			if (!transform)
 				return;
 
-			mat4 local_matrix = glm::translate(mat4(1.0f), transform->position) * glm::mat4_cast(transform->rotation) * glm::scale(mat4(1.0f), transform->scale);
+			mat4 local_matrix =
+				glm::translate(mat4(1.0f), transform->position) *
+				glm::mat4_cast(transform->rotation)             *
+				glm::scale(mat4(1.0f), transform->scale);
+
 			transform->world  = parent_world * local_matrix;
 
 			const HierarchyComponent* hierarchy = registry.template get<HierarchyComponent>(entity);
@@ -151,21 +163,36 @@ struct CameraSystem
 	}
 
 	template <typename... Components>
-	static bool init_camera_controller(Registry<Components...>& registry, ecs::Entity active_cam_entity, scn::Camera& cam_controller)
+	static bool init_camera_controller(
+		Registry<Components...>& registry,
+		ecs::Entity              active_cam_entity,
+		scn::CameraController&   cam_controller
+	)
 	{
 		if (active_cam_entity == ecs::invalid_entity)
 			return false;
 
-		const TransformComponent* transform_component = registry.template get<TransformComponent>(active_cam_entity);
+		if (cam_controller.mode == scn::CameraController::Mode::iso) {
+			cam_controller.yaw   = cam_controller.iso_yaw;
+			cam_controller.pitch = cam_controller.iso_pitch;
+			cam_controller.delta = {};
+			return true;
+		}
+
+		const TransformComponent* transform_component =
+			registry.template get<TransformComponent>(active_cam_entity);
+
 		if (!transform_component)
 			return false;
 
-		cam_controller.position = vec3(transform_component->world[3]);
+		vec3 forward_world = transform_component->world_fwd();
 
-		vec3 forward_world = -vec3(transform_component->world[2]);
 		const float len = glm::length(forward_world);
 		if (len > 0.0f) {
 			forward_world = glm::normalize(forward_world);
+		}
+		else {
+			forward_world = vec3(0.0f, 0.0f, -1.0f);
 		}
 
 		cam_controller.yaw = std::atan2(forward_world.x, -forward_world.z);
@@ -173,45 +200,19 @@ struct CameraSystem
 		forward_world.y = glm::clamp(forward_world.y, -1.0f, 1.0f);
 		cam_controller.pitch = std::asin(forward_world.y);
 
+		cam_controller.delta = {};
+
 		return true;
 	}
 
-	static mat4 make_view_matrix(const scn::Camera& cam_controller)
-	{
-		const float sin_y = std::sin(cam_controller.yaw);
-		const float cos_y = std::cos(cam_controller.yaw);
-		const float sin_p = std::sin(cam_controller.pitch);
-		const float cos_p = std::cos(cam_controller.pitch);
-
-		const vec3 forward_dir {sin_y * cos_p, sin_p, -cos_y * cos_p};
-		const vec3 center = cam_controller.position + glm::normalize(forward_dir);
-		const vec3 up {0.0f, 1.0f, 0.0f};
-
-		return glm::lookAt(cam_controller.position, center, up);
-	}
-
 	template <typename... Components>
-	static void apply_camera_controller(Registry<Components...>& registry, ecs::Entity active_cam_entity, const scn::Camera& cam_controller)
-	{
-		if (active_cam_entity == ecs::invalid_entity)
-			return;
-
-		TransformComponent* transform_component = registry.template get<TransformComponent>(active_cam_entity);
-		if (!transform_component)
-			return;
-
-		const mat4 view_mtx  = make_view_matrix(cam_controller);
-		const mat4 world_mtx = glm::inverse(view_mtx);
-
-		const quat world_rotation = glm::quat_cast(world_mtx);
-
-		transform_component->position = cam_controller.position;
-		transform_component->rotation = world_rotation;
-		transform_component->scale    = vec3(1.0f);
-	}
-
-	template <typename... Components>
-	static bool build_view(Registry<Components...>& registry, ecs::Entity active_cam_entity, float aspect, rdr::DrawView& draw_view)
+	static bool build_view(
+		Registry<Components...>&     registry,
+		ecs::Entity                  active_cam_entity,
+		float                        aspect,
+		const scn::CameraController& cam_controller,
+		rdr::DrawView&               draw_view
+	)
 	{
 		if (active_cam_entity == ecs::invalid_entity)
 			return false;
@@ -223,23 +224,154 @@ struct CameraSystem
 			return false;
 
 		mat4 mtx_V = glm::inverse(transform_component->world);
-		mat4 mtx_P = glm::perspective(glm::radians(camera_component->fov_deg), aspect, camera_component->znear, camera_component->zfar);
+
+		float znear = camera_component->znear;
+		float zfar  = camera_component->zfar;
+
+		mat4 mtx_P {};
+
+		if (cam_controller.mode == scn::CameraController::Mode::iso) {
+			const float half_h = 0.5f   * cam_controller.iso_ortho_height;
+			const float half_w = half_h * aspect;
+
+			float depth_span = std::max(
+				cam_controller.iso_min_depth_span,
+				cam_controller.iso_ortho_height * cam_controller.iso_depth_multiplier
+			);
+
+			znear = std::max(znear, -depth_span);
+			zfar  = std::min(zfar,   depth_span);
+
+			mtx_P = glm::ortho(
+				-half_w, half_w,
+				-half_h, half_h,
+				znear,
+				zfar
+			);
+		}
+		else {
+			znear = std::max(znear, 0.005f);
+
+			mtx_P = glm::perspective(
+				glm::radians(camera_component->fov_deg),
+				aspect,
+				znear,
+				zfar
+			);
+		}
+
 		mat4 mtx_VP = mtx_P * mtx_V;
 
 		draw_view.mtx_V  = mtx_V;
 		draw_view.mtx_P  = mtx_P;
 		draw_view.mtx_VP = mtx_VP;
 
-		draw_view.pos_world =  vec3(transform_component->world[3]);
-		draw_view.fwd_world = -vec3(transform_component->world[2]);
+		draw_view.pos_world = transform_component->world_pos();
+		draw_view.fwd_world = transform_component->world_fwd();
 
-		draw_view.near = camera_component->znear;
-		draw_view.far  = camera_component->zfar;
+		draw_view.near = znear;
+		draw_view.far  = zfar;
 
 		draw_view.frustum = math::frustum_planes(mtx_VP);
 
 		return true;
 	}
+
+	template <typename... Components>
+	static void update_camera_controller(
+		Registry<Components...>& registry,
+		ecs::Entity              active_cam_entity,
+		scn::CameraController&   cam_controller,
+		float                    delta_time,
+		float                    pan_sensitivity,
+		float                    dolly_sensitivity
+	)
+	{
+		if (active_cam_entity == ecs::invalid_entity)
+			return;
+
+		TransformComponent* transform_component =
+			registry.template get<TransformComponent>(active_cam_entity);
+
+		if (!transform_component)
+			return;
+
+		const bool iso_cam = cam_controller.mode == scn::CameraController::Mode::iso;
+
+		if (!iso_cam &&
+			(cam_controller.delta.orbit_x != 0.0f || cam_controller.delta.orbit_y != 0.0f)) {
+				cam_controller.look_delta(cam_controller.delta.orbit_x, cam_controller.delta.orbit_y);
+		}
+
+		const float yaw   = iso_cam ? cam_controller.iso_yaw   : cam_controller.yaw;
+		const float pitch = iso_cam ? cam_controller.iso_pitch : cam_controller.pitch;
+
+		const quat qt_yaw     = glm::angleAxis(yaw, vec3(0.0f, 1.0f, 0.0f));
+		const vec3 right_axis = qt_yaw * vec3(1.0f, 0.0f, 0.0f);
+		const quat qt_pitch   = glm::angleAxis(pitch, right_axis);
+
+		const quat rot = qt_pitch * qt_yaw;
+
+		const vec3 fwd_vec   = rot * vec3(0.0f, 0.0f, -1.0f);
+		const vec3 right_vec = rot * vec3(1.0f, 0.0f,  0.0f);
+
+		vec3 move_fwd_vec   = fwd_vec;
+		vec3 move_right_vec = right_vec;
+
+		if (iso_cam) {
+
+			move_fwd_vec.y   = 0.0f;
+			move_right_vec.y = 0.0f;
+
+			const float fwd_len2   = glm::dot(move_fwd_vec,   move_fwd_vec);
+			const float right_len2 = glm::dot(move_right_vec, move_right_vec);
+
+			if (fwd_len2 > 0.0f)   move_fwd_vec   *= glm::inversesqrt(fwd_len2);
+			if (right_len2 > 0.0f) move_right_vec *= glm::inversesqrt(right_len2);
+		}
+
+		const vec3 world_up {0.0f, 1.0f, 0.0f};
+
+		const float pan_x = pan_sensitivity * cam_controller.delta.pan_x;
+		const float pan_y = pan_sensitivity * cam_controller.delta.pan_y;
+
+		if (pan_x != 0.0f || pan_y != 0.0f) {
+			transform_component->position += right_vec * pan_x;
+			transform_component->position += world_up  * pan_y;
+		}
+
+		const float dolly = dolly_sensitivity * cam_controller.delta.dolly;
+
+		if (dolly != 0.0f) {
+			if (iso_cam) {
+				cam_controller.iso_ortho_height *= (1.0f - dolly);
+				if (cam_controller.iso_ortho_height < 0.01f) {
+					cam_controller.iso_ortho_height = 0.01f;
+				}
+			}
+			else {
+				transform_component->position += fwd_vec * dolly;
+			}
+		}
+
+		if (
+			cam_controller.delta.move_forward != 0.0f ||
+			cam_controller.delta.move_right   != 0.0f ||
+			cam_controller.delta.move_up      != 0.0f
+		) {
+			const float move_step = cam_controller.move_speed * delta_time;
+
+			transform_component->position += move_fwd_vec   * (move_step * cam_controller.delta.move_forward);
+			transform_component->position += move_right_vec * (move_step * cam_controller.delta.move_right);
+			transform_component->position += world_up       * (move_step * cam_controller.delta.move_up);
+		}
+
+		transform_component->rotation = rot;
+		transform_component->scale    = vec3(1.0f);
+
+		cam_controller.delta = {};
+	}
+
 };
 
 
@@ -297,8 +429,8 @@ struct LightSystem
 				view_light.color_rgb = light_component.color_rgb;
 				view_light.intensity = light_component.intensity;
 
-				const vec4 dir_world = vec4(vec3(transform_component.world[2]), 0.0f);
-				const vec4 pos_world = vec4(vec3(transform_component.world[3]), 1.0f);
+				const vec4 dir_world = vec4(transform_component.world_fwd(), 0.0f);
+				const vec4 pos_world = vec4(transform_component.world_pos(), 1.0f);
 
 				const vec4 dir_view = mtx_V * dir_world;
 				const vec4 pos_view = mtx_V * pos_world;

@@ -453,7 +453,7 @@ void CompositorPass::set_programs(Handle<Program> prog_grid, Handle<Program> pro
 
 void CompositorPass::execute(
 	RenderQueue<FxDrawCommand>&      fx_queue,
-	RenderQueue<TileDrawCommand>&     cue_queue,
+	RenderQueue<TileDrawCommand>&    cue_queue,
 	RenderQueue<OverlayDrawCommand>& overlay_queue,
 	const FrameContext&              context,
 	const SurfaceInfo&               surface_info

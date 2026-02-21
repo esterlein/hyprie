@@ -10,9 +10,12 @@
 
 namespace hpr::io {
 
+namespace cfg {
 
-static constexpr float k_deadzone_px    = 6.0f;
-static constexpr uint64_t k_hold_frames = 8;
+static constexpr float    deadzone_px = 6.0f;
+static constexpr uint64_t hold_frames = 8;
+
+} // hpr::io::cfg
 
 
 inline void handle_event(const sapp_event* event, InputState& state)
@@ -84,8 +87,8 @@ inline void handle_event(const sapp_event* event, InputState& state)
 			const float dy = event->mouse_dy;
 			state.rmb_drag += dx*dx + dy*dy;
 
-			const bool drag_ok = state.rmb_drag >= k_deadzone_px * k_deadzone_px;
-			const bool hold_ok = (sapp_frame_count() - state.rmb_down_frame) >= k_hold_frames;
+			const bool drag_ok = state.rmb_drag >= cfg::deadzone_px * cfg::deadzone_px;
+			const bool hold_ok = (sapp_frame_count() - state.rmb_down_frame) >= cfg::hold_frames;
 
 			if ((drag_ok || hold_ok) && !sapp_mouse_locked()) {
 				sapp_lock_mouse(true);
@@ -120,12 +123,16 @@ inline void handle_event(const sapp_event* event, InputState& state)
 		if (event->key_code == SAPP_KEYCODE_F5) { state.key_f5_press = true; }
 		if (event->key_code == SAPP_KEYCODE_F6) { state.key_f6_press = true; }
 
+		if (event->key_code == SAPP_KEYCODE_F9) { state.key_f9_press = true; }
+
 		if (event->key_code == SAPP_KEYCODE_W)  { state.key_w = true; }
 		if (event->key_code == SAPP_KEYCODE_A)  { state.key_a = true; }
 		if (event->key_code == SAPP_KEYCODE_S)  { state.key_s = true; }
 		if (event->key_code == SAPP_KEYCODE_D)  { state.key_d = true; }
 		if (event->key_code == SAPP_KEYCODE_Q)  { state.key_q = true; }
 		if (event->key_code == SAPP_KEYCODE_E)  { state.key_e = true; }
+
+		if (event->key_code == SAPP_KEYCODE_G)  { state.key_g = true; }
 
 		if (event->key_code == SAPP_KEYCODE_ENTER)     { state.key_enter     = true; }
 		if (event->key_code == SAPP_KEYCODE_TAB)       { state.key_tab       = true; }
@@ -170,6 +177,8 @@ inline void handle_event(const sapp_event* event, InputState& state)
 		if (event->key_code == SAPP_KEYCODE_D) { state.key_d = false; }
 		if (event->key_code == SAPP_KEYCODE_Q) { state.key_q = false; }
 		if (event->key_code == SAPP_KEYCODE_E) { state.key_e = false; }
+
+		if (event->key_code == SAPP_KEYCODE_G) { state.key_g = false; }
 
 		if (event->key_code == SAPP_KEYCODE_ENTER)     { state.key_enter     = false; }
 		if (event->key_code == SAPP_KEYCODE_TAB)       { state.key_tab       = false; }

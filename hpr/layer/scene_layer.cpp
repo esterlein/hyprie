@@ -1,6 +1,7 @@
 #include <cmath>
 #include <limits>
 
+#include "camera_controller.hpp"
 #include "draw_view_data.hpp"
 #include "inspector_state.hpp"
 #include "math.hpp"
@@ -17,18 +18,11 @@
 namespace hpr {
 
 
-namespace cfg {
-
-	inline constexpr uint32_t job_grain = 64U;
-
-} // hpr::cfg
-
-
 struct FrustumPlane
 {
 	vec3  normal;
 	vec3  abs_normal;
-	float w;
+	float offset;
 };
 
 
@@ -59,30 +53,31 @@ struct ModelDrawCmdJobSlice
 	const FrustumPlane* frustum_planes;
 	uint32_t            frustum_plane_count;
 
-	uint32_t layer_index;
-
+	uint32_t    layer_index;
 	ecs::Entity selected_entity;
 
-	mtp::slag<rdr::SceneDrawCommand, mtp::default_set>* draw_cmds;
+	SceneLayer::DrawCmdAsyncResult* draw_cmd_result;
 };
 
 
 SceneLayer::SceneLayer(
-	ECSRegistry&            ecs_registry,
-	res::AssetKeeper&       asset_keeper,
-	rdr::RenderForge&       render_forge,
-	rdr::Renderer&          renderer,
-	const io::InputBinding& input_binding,
-	scn::SceneResolver&     resolver,
-	const char*             scene_path
+	ECSRegistry&              ecs_registry,
+	res::AssetKeeper&         asset_keeper,
+	rdr::RenderForge&         render_forge,
+	rdr::Renderer&            renderer,
+	const io::InputBinding&   input_binding,
+	scn::SceneResolver&       resolver,
+	const char*               scene_path,
+	mtp::shared<mtp_scn_set>& metapool
 )
-	: m_registry     {ecs_registry}
-	, m_asset_keeper {asset_keeper}
-	, m_render_forge {render_forge}
-	, m_renderer     {renderer}
-	, m_binding      {input_binding}
-	, m_resolver     {resolver}
-	, m_scene_path   {scene_path}
+	: m_registry               {ecs_registry}
+	, m_asset_keeper           {asset_keeper}
+	, m_render_forge           {render_forge}
+	, m_renderer               {renderer}
+	, m_binding                {input_binding}
+	, m_resolver               {resolver}
+	, m_scene_path             {scene_path}
+	, m_slice_draw_cmd_results {metapool}
 {
 	uint32_t worker_thread_count = std::thread::hardware_concurrency();
 
@@ -97,11 +92,7 @@ SceneLayer::SceneLayer(
 		worker_thread_count = 8;
 	}
 
-
-	worker_thread_count = 1;
-
-
-	m_scheduler.init(worker_thread_count);
+	m_job_scheduler.init(worker_thread_count);
 }
 
 
@@ -109,13 +100,19 @@ void SceneLayer::on_attach()
 {
 	scn::io::SceneDoc scene_doc {};
 	if (!scn::io::read_file(m_scene_path, scene_doc)){
-		// TODO: control & log
+		HPR_FATAL(
+			log::LogCategory::scene,
+			"[layer][on_attach] read scene file failed"
+		);
 		return;
 	}
 
 	m_scene.clear();
 	if (!scn::instantiate(scene_doc, m_registry, m_asset_keeper, m_render_forge, m_scene)) {
-		// TODO: control & log
+		HPR_FATAL(
+			log::LogCategory::scene,
+			"[layer][on_attach] instantiate scene failed"
+		);
 		return;
 	}
 
@@ -128,7 +125,7 @@ void SceneLayer::on_attach()
 	const bool is_cam_ok = ecs::CameraSystem::init_camera_controller(
 		m_registry,
 		m_active_cam_entity,
-		m_camera_controller
+		m_cam_controller
 	);
 	HPR_ASSERT(is_cam_ok);
 }
@@ -152,26 +149,39 @@ bool SceneLayer::on_actions(std::span<const Action> actions)
 		switch (action.kind) {
 		case ActionKind::Orbit: {
 			const auto& payload = std::get<OrbitAction>(action.payload);
-			m_orbit_dx += payload.delta_x;
-			m_orbit_dy += payload.delta_y;
+			m_cam_controller.delta.orbit_x += payload.delta_x;
+			m_cam_controller.delta.orbit_y += payload.delta_y;
+			action_consumed = true;
 		}
 		break;
 		case ActionKind::Pan: {
 			const auto& payload = std::get<PanAction>(action.payload);
-			m_pan_dx += payload.delta_x;
-			m_pan_dy += payload.delta_y;
+			m_cam_controller.delta.pan_x += payload.delta_x;
+			m_cam_controller.delta.pan_y += payload.delta_y;
+			action_consumed = true;
 		}
 		break;
 		case ActionKind::Dolly: {
 			const auto& payload = std::get<DollyAction>(action.payload);
-			m_dolly += payload.amount;
+			m_cam_controller.delta.dolly += payload.amount;
+			action_consumed = true;
 		}
 		break;
 		case ActionKind::Move: {
 			const auto& payload = std::get<MoveAction>(action.payload);
-			m_move_forward += payload.forward;
-			m_move_right   += payload.right;
-			m_move_up      += payload.up;
+			m_cam_controller.delta.move_forward = payload.forward;
+			m_cam_controller.delta.move_right   = payload.right;
+			m_cam_controller.delta.move_up      = payload.up;
+			action_consumed = true;
+		}
+		break;
+
+		case ActionKind::ToggleCameraMode: {
+			m_cam_controller.mode =
+				m_cam_controller.mode == scn::CameraController::Mode::iso
+				? scn::CameraController::Mode::fly
+				: scn::CameraController::Mode::iso;
+			action_consumed = true;
 		}
 		break;
 
@@ -189,7 +199,6 @@ bool SceneLayer::on_actions(std::span<const Action> actions)
 			);
 
 			const scn::RayHit ray_hit = scn::raycast_scene(ray, m_registry, m_scene, m_resolver);
-
 
 			if (ray_hit.hit) {
 				m_selection.entity = ray_hit.entity;
@@ -231,59 +240,14 @@ bool SceneLayer::on_actions(std::span<const Action> actions)
 
 void SceneLayer::on_update(float delta_time)
 {
-	if (m_orbit_dx != 0.0f || m_orbit_dy != 0.0f) {
-		m_camera_controller.look_delta(m_orbit_dx, m_orbit_dy);
-	}
-
-	const float sin_yaw   = std::sin(m_camera_controller.yaw);
-	const float cos_yaw   = std::cos(m_camera_controller.yaw);
-	const float sin_pitch = std::sin(m_camera_controller.pitch);
-	const float cos_pitch = std::cos(m_camera_controller.pitch);
-
-	vec3 forward = glm::normalize(vec3 {sin_yaw * cos_pitch, sin_pitch, -cos_yaw * cos_pitch});
-
-	const vec3 world_up = {0.0f, 1.0f, 0.0f};
-	vec3 right_vec = glm::cross(forward, world_up);
-
-	if (glm::dot(right_vec, right_vec) < math::magnitude_sq_epsilon) {
-		right_vec = {cos_yaw, 0.0f, sin_yaw};
-	}
-	else {
-		right_vec = glm::normalize(right_vec);
-	}
-
-	if (m_pan_dx != 0.0f || m_pan_dy != 0.0f) {
-		const float pan_step_x = m_binding.pan_sensitivity * m_pan_dx;
-		const float pan_step_y = m_binding.pan_sensitivity * m_pan_dy;
-
-		m_camera_controller.position += right_vec * pan_step_x;
-		m_camera_controller.position += world_up  * pan_step_y;
-	}
-
-	if (m_dolly != 0.0f) {
-		const float dolly_step = m_binding.dolly_sensitivity * m_dolly;
-
-		m_camera_controller.position += forward * dolly_step;
-	}
-
-	if (m_move_forward != 0.0f || m_move_right != 0.0f || m_move_up != 0.0f) {
-		const float move_step = m_camera_controller.move_speed * delta_time;
-
-		m_camera_controller.position += forward   * (move_step * m_move_forward);
-		m_camera_controller.position += right_vec * (move_step * m_move_right);
-		m_camera_controller.position += world_up  * (move_step * m_move_up);
-	}
-
-	m_orbit_dx     = 0.0f;
-	m_orbit_dy     = 0.0f;
-	m_pan_dx       = 0.0f;
-	m_pan_dy       = 0.0f;
-	m_dolly        = 0.0f;
-	m_move_forward = 0.0f;
-	m_move_right   = 0.0f;
-	m_move_up      = 0.0f;
-
-	ecs::CameraSystem::apply_camera_controller(m_registry, m_active_cam_entity, m_camera_controller);
+	ecs::CameraSystem::update_camera_controller(
+		m_registry,
+		m_active_cam_entity,
+		m_cam_controller,
+		delta_time,
+		m_binding.pan_sensitivity,
+		m_binding.dolly_sensitivity
+	);
 
 	ecs::HierarchySystem::update(m_registry);
 	ecs::TransformSystem::update(m_registry);
@@ -291,13 +255,18 @@ void SceneLayer::on_update(float delta_time)
 
 	const float aspect_ratio = m_renderer.surface_info().aspect;
 
-	ecs::CameraSystem::build_view(m_registry, m_active_cam_entity, aspect_ratio, m_draw_view);
+	ecs::CameraSystem::build_view(
+		m_registry,
+		m_active_cam_entity,
+		aspect_ratio,
+		m_cam_controller,
+		m_draw_view
+	);
 
 	m_draw_view_light_set.ambient_rgb = glm::make_vec3(m_scene.ambient());
 
 	ecs::LightSystem::build_light(m_registry, m_draw_view, m_draw_view_light_set);
 }
-
 
 
 void SceneLayer::on_submit(rdr::Renderer& renderer, uint32_t layer_index)
@@ -306,14 +275,29 @@ void SceneLayer::on_submit(rdr::Renderer& renderer, uint32_t layer_index)
 
 	const auto& scene_primitives = m_scene.scene_primitives();
 
-	std::array<FrustumPlane, math::frustum_plane_count> culling_planes;
+	std::array<FrustumPlane, math::frustum_plane_count> frustum_planes;
 
-	for (size_t plane_index = 0; plane_index < culling_planes.size(); ++plane_index) {
-		const vec4& plane = m_draw_view.frustum[plane_index];
-		culling_planes[plane_index] = {
-			vec3(plane.x, plane.y, plane.z),
-			glm::abs(vec3(plane.x, plane.y, plane.z)),
-			plane.w
+	for (size_t plane_idx = 0; plane_idx < frustum_planes.size(); ++plane_idx) {
+
+		const vec4 raw_plane = m_draw_view.frustum[plane_idx];
+
+		const vec3 raw_normal {
+			raw_plane.x,
+			raw_plane.y,
+			raw_plane.z
+		};
+
+		const float normal_len = glm::length(raw_normal);
+
+		const float inv_normal_len =
+			(normal_len > 0.0f) ? (1.0f / normal_len) : 0.0f;
+
+		const vec3 unit_normal = raw_normal * inv_normal_len;
+
+		frustum_planes[plane_idx] = {
+			unit_normal,
+			glm::abs(unit_normal),
+			raw_plane.w * inv_normal_len
 		};
 	}
 
@@ -334,24 +318,24 @@ void SceneLayer::on_submit(rdr::Renderer& renderer, uint32_t layer_index)
 			const vec3 aabb_center = chunk_drawable.bounds_center;
 			const vec3 aabb_half   = chunk_drawable.bounds_half;
 
-			bool culled = false;
+			bool is_culled = false;
 
-			for (const auto& plane : culling_planes) {
+			for (const auto& plane : frustum_planes) {
 
 				const float aabb_proj_radius =
 					plane.abs_normal.x * aabb_half.x +
 					plane.abs_normal.y * aabb_half.y +
 					plane.abs_normal.z * aabb_half.z;
 
-				const float signed_distance = glm::dot(plane.normal, aabb_center) + plane.w;
+				const float signed_distance = glm::dot(plane.normal, aabb_center) + plane.offset;
 
 				if (signed_distance < -aabb_proj_radius) {
-					culled = true;
+					is_culled = true;
 					break;
 				}
 			}
 
-			if (culled) {
+			if (is_culled) {
 				continue;
 			}
 
@@ -437,26 +421,27 @@ void SceneLayer::on_submit(rdr::Renderer& renderer, uint32_t layer_index)
 	mtp::slag<ModelDrawCmdJobSlice, mtp::default_set> draw_cmd_job_slices;
 	draw_cmd_job_slices.resize(job_slice_count);
 
-	mtp::slag<mtp::slag<rdr::SceneDrawCommand, mtp::default_set>, mtp::default_set> slice_draw_cmds;
-	slice_draw_cmds.resize(job_slice_count);
+	m_slice_draw_cmd_results.resize(job_slice_count);
 
 	for (uint32_t job_slice_idx = 0; job_slice_idx < job_slice_count; ++job_slice_idx) {
 
-		slice_draw_cmds[job_slice_idx].reserve(cfg::job_grain * 2);
+		auto& slice = draw_cmd_job_slices[job_slice_idx];
 
-		draw_cmd_job_slices[job_slice_idx].instances           = model_draw_instances.data();
-		draw_cmd_job_slices[job_slice_idx].instance_count      = model_instance_count;
-		draw_cmd_job_slices[job_slice_idx].scene_primitives    = &scene_primitives;
-		draw_cmd_job_slices[job_slice_idx].frustum_planes      = culling_planes.data();
-		draw_cmd_job_slices[job_slice_idx].frustum_plane_count = static_cast<uint32_t>(culling_planes.size());
-		draw_cmd_job_slices[job_slice_idx].layer_index         = layer_index;
-		draw_cmd_job_slices[job_slice_idx].selected_entity     = m_selection.entity;
-		draw_cmd_job_slices[job_slice_idx].draw_cmds           = &slice_draw_cmds[job_slice_idx];
+		slice.instances           = model_draw_instances.data();
+		slice.instance_count      = model_instance_count;
+		slice.scene_primitives    = &scene_primitives;
+		slice.frustum_planes      = frustum_planes.data();
+		slice.frustum_plane_count = static_cast<uint32_t>(frustum_planes.size());
+		slice.layer_index         = layer_index;
+		slice.selected_entity     = m_selection.entity;
+
+		slice.draw_cmd_result = &m_slice_draw_cmd_results[job_slice_idx];
+		slice.draw_cmd_result->count = 0;
 	}
 
 	job::JobLatch job_latch;
 
-	m_scheduler.dispatch_range(
+	m_job_scheduler.dispatch_range(
 		job_latch,
 		&build_model_draw_cmds,
 		model_instance_count,
@@ -467,7 +452,7 @@ void SceneLayer::on_submit(rdr::Renderer& renderer, uint32_t layer_index)
 	job_latch.wait();
 
 	for (uint32_t job_slice_idx = 0; job_slice_idx < job_slice_count; ++job_slice_idx) {
-		for (const auto& draw_cmd : slice_draw_cmds[job_slice_idx]) {
+		for (const auto& draw_cmd : m_slice_draw_cmd_results[job_slice_idx]) {
 			renderer.scene_queue().push(draw_cmd);
 		}
 	}
@@ -484,7 +469,7 @@ void SceneLayer::build_model_draw_cmds(void* slice_raw)
 {
 	auto* slice = static_cast<ModelDrawCmdJobSlice*>(slice_raw);
 
-	auto& slice_draw_cmds = *slice->draw_cmds;
+	auto& slice_draw_cmds = *slice->draw_cmd_result;
 	slice_draw_cmds.clear();
 
 	const ModelDrawInstance* model_draw_instances = slice->instances;
@@ -508,7 +493,7 @@ void SceneLayer::build_model_draw_cmds(void* slice_raw)
 				plane.abs_normal.z * aabb_half.z;
 
 			const float signed_distance =
-				glm::dot(plane.normal, aabb_center) + plane.w;
+				glm::dot(plane.normal, aabb_center) + plane.offset;
 
 			if (signed_distance < -aabb_proj_radius) {
 				is_culled = true;
@@ -561,7 +546,7 @@ void SceneLayer::build_model_draw_cmds(void* slice_raw)
 				.flags       = flags
 			};
 
-			slice_draw_cmds.emplace_back(draw_cmd);
+			slice->draw_cmd_result->push(draw_cmd);
 		}
 	}
 }

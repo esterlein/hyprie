@@ -32,7 +32,7 @@ public:
 	AssetKeeper(const AssetKeeper&) = delete;
 	AssetKeeper& operator=(const AssetKeeper&) = delete;
 	AssetKeeper(AssetKeeper&&) noexcept = default;
-	AssetKeeper& operator=(AssetKeeper&&) noexcept = delete;
+	AssetKeeper& operator=(AssetKeeper&&) = delete;
 
 
 	ImportModel import_gltf_model(const char* path);

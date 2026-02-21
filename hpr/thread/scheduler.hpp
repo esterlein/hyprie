@@ -47,6 +47,11 @@ public:
 
 	Scheduler() = default;
 
+	~Scheduler()
+	{
+		shutdown();
+	}
+
 	Scheduler(const Scheduler&) = delete;
 	Scheduler& operator=(const Scheduler&) = delete;
 
@@ -267,6 +272,8 @@ private:
 
 private:
 
+	mtp::shared<mtp_job_set> m_metapool;
+
 	uint32_t m_worker_count {0};
 
 	std::atomic<uint32_t> m_submit_counter     {0};
@@ -278,8 +285,6 @@ private:
 	mtp::crib<mtp::chaselev<JobEntry, mtp_job_set>, cfg::max_workers> m_job_deques;
 
 	MpmcRing<JobEntry, cfg::injection_capacity> m_injection_queue;
-
-	mtp::shared<mtp_job_set> m_metapool;
 };
 
 

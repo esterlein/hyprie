@@ -4,7 +4,6 @@
 #include "editor.hpp"
 #include "render_data.hpp"
 
-#include "scene_layer.hpp"
 #include "edit_layer.hpp"
 #include "gizmo_layer.hpp"
 #include "fx_layer.hpp"
@@ -51,7 +50,8 @@ void Engine::init()
 		m_renderer,
 		m_input_binding,
 		m_scene_resolver,
-		m_scene_path
+		m_scene_path,
+		m_scn_metapool
 	));
 
 	m_layer_stack.push_overlay(std::make_unique<FxLayer>(

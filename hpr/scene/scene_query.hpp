@@ -342,12 +342,12 @@ inline Ray make_pick_ray(
 	pos_world_near_hom /= pos_world_near_hom.w;
 	pos_world_far_hom  /= pos_world_far_hom.w;
 
-	const vec3 pos_world_near {pos_world_near_hom}; // NOTE: keep for now
+	const vec3 pos_world_near {pos_world_near_hom};
 	const vec3 pos_world_far  {pos_world_far_hom};
 
 	Ray ray {
-		.origin    = draw_view.pos_world,
-		.direction = glm::normalize(pos_world_far - draw_view.pos_world)
+		.origin    = pos_world_near,
+		.direction = glm::normalize(pos_world_far - pos_world_near)
 	};
 
 	return ray;

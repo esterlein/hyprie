@@ -16,6 +16,9 @@ struct TransformComponent
 	quat rotation;
 	vec3 position;
 	vec3 scale;
+
+	vec3 world_fwd() const { return -vec3(world[2]); }
+	vec3 world_pos() const { return  vec3(world[3]); }
 };
 
 

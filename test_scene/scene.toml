@@ -1314,8 +1314,8 @@ rotation = [-0.3605453, -0.1698397, -0.0669452, 0.9147021]
 scale = [1.0, 1.0, 1.0]
 [entity.camera]
 fov_deg = 60.0
-znear = 0.1
-zfar = 200.0
+znear = -10000.0
+zfar = 10000.0
 active = true
 
 

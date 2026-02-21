@@ -8,7 +8,7 @@ namespace hpr {
 
 struct FrameContext
 {
-	rdr::DrawView   scene_view  {};
+	rdr::DrawView         scene_view  {};
 	rdr::DrawViewLightSet scene_light {};
 };
 

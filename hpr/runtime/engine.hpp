@@ -27,6 +27,8 @@
 #include "ui_resolver.hpp"
 #include "ui_backend.hpp"
 
+#include "scene_layer.hpp"
+
 
 namespace hpr {
 
@@ -56,6 +58,8 @@ public:
 	void tick() {}
 
 private:
+
+	mtp::shared<SceneLayer::mtp_scn_set> m_scn_metapool;
 
 	rdr::RenderHub     m_render_hub;
 	rdr::Renderer      m_renderer;

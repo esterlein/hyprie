@@ -58,7 +58,7 @@ void main()
 		discard;
 
 	float ray_hit_factor = (camera.grid_plane_y - ray_origin.y) / denom;
-	if (ray_hit_factor <= 0.0)
+	if (ray_hit_factor < 0.0)
 		discard;
 
 	vec3 grid_hit_world = ray_origin + ray_dir * ray_hit_factor;
@@ -165,7 +165,8 @@ void main()
 	float alpha   = max(alpha_minor, alpha_major);
 	vec3 line_rgb = mix(grid.minor_color_rgba.rgb, grid.major_color_rgba.rgb, step(alpha_minor, alpha_major));
 
-	vec4 clip    = camera.mtx_VP * vec4(grid_hit_world, 1.0);
+	vec4 clip = camera.mtx_VP * vec4(grid_hit_world, 1.0);
+
 	float ndc_z  = clip.z / clip.w;
 	gl_FragDepth = ndc_z * 0.5 + 0.5;
 

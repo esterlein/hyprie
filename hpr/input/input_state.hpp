@@ -21,6 +21,8 @@ struct InputState
 	bool key_q {false};
 	bool key_e {false};
 
+	bool key_g {false};
+
 	float mouse_dx {0.0f};
 	float mouse_dy {0.0f};
 
@@ -46,8 +48,8 @@ struct InputState
 	float mouse_press_x {0.0f};
 	float mouse_press_y {0.0f};
 
-	bool  rmb_pending       {false};
-	float rmb_drag          {0.0f};
+	bool     rmb_pending    {false};
+	float    rmb_drag       {0.0f};
 	uint64_t rmb_down_frame {0};
 
 	float scroll_x {0.0f};
@@ -78,6 +80,8 @@ struct InputState
 	bool key_f4_press {false};
 	bool key_f5_press {false};
 	bool key_f6_press {false};
+
+	bool key_f9_press {false};
 
 	bool focused {true};
 
@@ -116,6 +120,7 @@ struct InputState
 		key_f4_press = false;
 		key_f5_press = false;
 		key_f6_press = false;
+		key_f9_press = false;
 	}
 };
 

@@ -33,7 +33,8 @@ enum class ActionKind : uint8_t
 	DebugToggleAsset,
 	SnapOn,
 	SnapOff,
-	Move
+	Move,
+	ToggleCameraMode
 };
 
 struct MoveAction
@@ -139,6 +140,9 @@ struct SnapOnAction
 struct SnapOffAction
 {};
 
+struct ToggleCameraModeAction
+{};
+
 using ActionPayload = std::variant <
 	OrbitAction,
 	PanAction,
@@ -162,7 +166,8 @@ using ActionPayload = std::variant <
 	DebugToggleAssetAction,
 	SnapOnAction,
 	SnapOffAction,
-	MoveAction
+	MoveAction,
+	ToggleCameraModeAction
 >;
 
 struct Action
