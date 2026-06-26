@@ -1,0 +1,119 @@
+ambient_rgb = [0.4, 0.4, 0.4]
+
+
+[[entity]]
+guid = "0x0000000000001001"
+name = "dragon_0"
+[entity.transform]
+position = [0.0, 0.0, 0.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.model]
+gltf = "damaged_helmet.glb"
+
+
+[[entity]]
+guid = "0x0000000000001002"
+name = "dragon_0"
+[entity.transform]
+position = [5.0, 5.0, 0.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [2.0, 2.0, 2.0]
+[entity.model]
+gltf = "damaged_helmet.glb"
+
+
+# camera
+
+[[entity]]
+guid = "0x0000000000002001"
+name = "main_camera"
+[entity.transform]
+position = [0.0, 0.0, -1.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.camera]
+fov_deg = 60.0
+znear = -10000.0
+zfar = 10000.0
+active = true
+
+
+# lights
+
+[[entity]]
+guid = "0x0000000000003001"
+name = "dir_sun"
+[entity.transform]
+position = [0.0, 2.0, 0.0]
+rotation = [0.0, 0.707, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 0
+color_rgb = [1.0, 1.0, 1.0]
+intensity = 1.0
+range = 500.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003014"
+name = "spot_top_down"
+[entity.transform]
+position = [0.0, 9.0, 0.0]
+rotation = [0.707, 0.0, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 2
+color_rgb = [1.0, 0.95, 0.85]
+intensity = 5.0
+range = 14.0
+inner_deg = 18.0
+outer_deg = 28.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003015"
+name = "spot_side_rim_r"
+[entity.transform]
+position = [10.0, 3.0, -3.0]
+rotation = [0.0, -0.707, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 2
+color_rgb = [0.95, 0.85, 1.0]
+intensity = 3.5
+range = 12.0
+inner_deg = 20.0
+outer_deg = 32.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003016"
+name = "spot_side_rim_l"
+[entity.transform]
+position = [-10.0, 3.0, -3.0]
+rotation = [0.0, 0.707, 0.0, 0.707]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 2
+color_rgb = [0.85, 0.95, 1.0]
+intensity = 3.0
+range = 12.0
+inner_deg = 20.0
+outer_deg = 34.0
+enabled = true
+
+[[entity]]
+guid = "0x0000000000003017"
+name = "point_low_bounce"
+[entity.transform]
+position = [2.0, 0.6, 2.0]
+rotation = [0.0, 0.0, 0.0, 1.0]
+scale = [1.0, 1.0, 1.0]
+[entity.light]
+type = 1
+color_rgb = [1.0, 0.9, 0.75]
+intensity = 2.5
+range = 5.0
+enabled = true
+

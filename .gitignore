@@ -1,0 +1,13 @@
+.git/
+.cache/
+build/
+build_shd/
+
+imports/metapool/
+
+*.log
+*.trace
+
+compile_commands.json
+
+*.rdc
