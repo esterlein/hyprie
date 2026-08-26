@@ -21,6 +21,21 @@ The papers I based the final two-tier BVH on:
 
 The following video demonstration presents per-frame TLAS reconstruction and a BLAS ray traversal visualization. Blue-green color is TLAS, green color is BLAS (roots only). For ray traversal overlays: purple color shows tested nodes, red color shows the actual ray path.
 
+<table>
+  <tr>
+    <td align="center">
+      <video src="test_scene/test_bvh_00.mp4" controls width="100%"></video>
+      <br>
+      <code>test_bvh_00</code>
+    </td>
+    <td align="center">
+      <video src="test_scene/test_bvh_01.mp4" controls width="100%"></video>
+      <br>
+      <code>test_bvh_01</code>
+    </td>
+  </tr>
+</table>
+
 
 ### :white_square_button: visibility system
 
