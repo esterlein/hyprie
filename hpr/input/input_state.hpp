@@ -85,6 +85,8 @@ struct InputState
 	bool key_f6_press  {false};
 
 	bool key_f9_press  {false};
+	bool key_f10_press {false};
+	bool key_f11_press {false};
 	bool key_f12_press {false};
 
 	bool focused {true};
@@ -125,6 +127,8 @@ struct InputState
 		key_f5_press  = false;
 		key_f6_press  = false;
 		key_f9_press  = false;
+		key_f10_press = false;
+		key_f11_press = false;
 		key_f12_press = false;
 	}
 };

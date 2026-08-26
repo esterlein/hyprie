@@ -17,6 +17,23 @@ struct SceneBlob
 };
 
 
+struct AnimBlob
+{
+	mat4 mtx_M  {1.0f};
+	mat4 mtx_MN {1.0f};
+
+	uint32_t base_bone_idx;
+	uint32_t material_idx;
+	uint32_t pad[2];
+};
+
+
+struct BoneBlob
+{
+	mat4 mtx_bone;
+};
+
+
 struct CueBlob
 {
 	mat4 mtx_M {1.0f};

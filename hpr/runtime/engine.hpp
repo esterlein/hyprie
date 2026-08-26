@@ -54,7 +54,7 @@ public:
 
 private:
 
-	mtp::shared<SceneLayer::mtp_scn_set> m_scn_metapool;
+	mtp::shared<lyr::SceneLayer::mtp_scn_set> m_scn_metapool;
 
 	rdr::RenderHub     m_render_hub;
 	rdr::Renderer      m_renderer;
@@ -62,7 +62,7 @@ private:
 	rdr::ForgeResolver m_forge_resolver;
 	rdr::RenderForge   m_render_forge;
 	scn::SceneBuilder  m_scene_builder;
-	LayerStack         m_layer_stack;
+	lyr::LayerStack    m_layer_stack;
 
 	ui::UiBackend  m_ui_backend;
 	ui::UiResolver m_ui_resolver;
@@ -76,7 +76,7 @@ private:
 
 	rdr::FontMason m_font_mason;
 
-	mtp::vault<Action, mtp::default_set> m_actions {};
+	mtp::vault<io::Action, mtp::default_set> m_actions {};
 
 	MainRegistry m_ecs_registry;
 

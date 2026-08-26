@@ -1,11 +1,11 @@
 #pragma once
 
-#include "math.hpp"
+#include "layer.hpp"
 
 #include "log.hpp"
+#include "math.hpp"
 #include "stats.hpp"
 #include "event.hpp"
-#include "layer.hpp"
 
 #include "font_data.hpp"
 #include "renderer.hpp"
@@ -21,7 +21,7 @@
 #include <span>
 
 
-namespace hpr {
+namespace hpr::lyr {
 
 
 using FontResolver = res::HandleResolver <
@@ -103,7 +103,7 @@ public:
 	void on_detach() override;
 	bool on_event(Event& event) override;
 
-	bool on_actions(const scn::SceneContext& scn_ctx, std::span<const Action> actions) override;
+	bool on_actions(const scn::SceneContext& scn_ctx, std::span<const io::Action> actions) override;
 	void on_update(scn::SceneContext& scn_ctx, float delta_time) override;
 	void on_submit(const scn::SceneContext& scn_ctx, uint32_t layer_idx) override;
 
@@ -140,5 +140,5 @@ private:
 	log::StatsHarvester&                 m_harvester;
 };
 
-} // hpr
+} // hpr::lyr
 

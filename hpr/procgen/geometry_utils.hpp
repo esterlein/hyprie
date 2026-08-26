@@ -10,19 +10,19 @@ namespace hpr::geo {
 
 
 inline void extract_unique_edges(
-	const uint32_t*                         trig_indices,
-	uint32_t                                trig_idx_cnt,
+	const uint32_t*                         tris_indices,
+	uint32_t                                tris_idx_cnt,
 	mtp::vault<uint32_t, mtp::default_set>& line_indices
 )
 {
 	mtp::vault<uint64_t, mtp::default_set> edge_hashes;
-	edge_hashes.reserve(trig_idx_cnt);
+	edge_hashes.reserve(tris_idx_cnt);
 
-	for (uint32_t i = 0; i < trig_idx_cnt; i += 3) {
+	for (uint32_t i = 0; i < tris_idx_cnt; i += 3) {
 
-		uint32_t idx_0 = trig_indices[i + 0];
-		uint32_t idx_1 = trig_indices[i + 1];
-		uint32_t idx_2 = trig_indices[i + 2];
+		uint32_t idx_0 = tris_indices[i + 0];
+		uint32_t idx_1 = tris_indices[i + 1];
+		uint32_t idx_2 = tris_indices[i + 2];
 
 		edge_hashes.push_back((static_cast<uint64_t>(std::min(idx_0, idx_1)) << 32) | std::max(idx_0, idx_1));
 		edge_hashes.push_back((static_cast<uint64_t>(std::min(idx_1, idx_2)) << 32) | std::max(idx_1, idx_2));

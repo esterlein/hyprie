@@ -14,12 +14,25 @@ struct SceneVertex
 	uint32_t nrm;
 	uint32_t tan;
 	v2u16    uv0;
-	v2u16    uv1;
-	uint32_t rgb;
 };
 #pragma pack(pop)
 
-static_assert(sizeof(SceneVertex) == 32);
+static_assert(sizeof(SceneVertex) == 24);
+
+
+#pragma pack(push, 1)
+struct AnimVertex
+{
+	v3f32    pos;
+	uint32_t nrm;
+	uint32_t tan;
+	v2u16    uv0;
+	uint8_t  jnt[4];
+	uint8_t  wgt[4];
+};
+#pragma pack(pop)
+
+static_assert(sizeof(AnimVertex) == 32);
 
 
 #pragma pack(push, 1)

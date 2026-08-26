@@ -20,16 +20,6 @@
 namespace hpr::rdr {
 
 
-struct TextureMassSlice
-{
-	uint32_t array {0xFFFFFFFF};
-	uint32_t slice {0xFFFFFFFF};
-
-	uint32_t width  {0};
-	uint32_t height {0};
-};
-
-
 class TextureMass
 {
 public:
@@ -52,7 +42,7 @@ public:
 	}
 
 
-	TextureMassSlice stage(
+	Texture stage(
 		const void* pixel_data,
 		uint32_t    width,
 		uint32_t    height,
@@ -114,7 +104,7 @@ public:
 	
 		m_dirty_arrays.insert(array_idx);
 	
-		return TextureMassSlice {
+		return Texture {
 			.array  = array_idx,
 			.slice  = slice_idx,
 			.width  = bucket_size,

@@ -74,7 +74,7 @@ sapp_desc sokol_main(int, char**)
 	desc.cleanup_cb       = cleanup;
 	desc.event_cb         = event;
 	desc.width            = 1920;
-	desc.height           = 1200;
+	desc.height           = 1080;
 	desc.window_title     = "hyprie";
 	desc.logger.func      = slog_func;
 	desc.gl.major_version = 4;

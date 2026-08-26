@@ -11,6 +11,7 @@
 #include "render_data.hpp"
 #include "render_queue.hpp"
 #include "render_context.hpp"
+#include "canonical_data.hpp"
 #include "draw_queue_data.hpp"
 
 #include "scene_context.hpp"
@@ -32,15 +33,22 @@ public:
 
 	log::PassStats execute(
 		RenderQueue<SceneDrawCmd>&  scene_queue,
+		RenderQueue<AnimDrawCmd>&   anim_queue,
 		RenderQueue<ReplayDrawCmd>& replay_queue,
 		const scn::SceneContext&    scene_ctx,
 		const BindingContext&       binding_ctx,
 		const StagingContext&       staging_ctx
 	);
 
+	void set_canonical_shapes(const geo::CanonicalShapes& shapes)
+	{
+		m_canonical_shapes = shapes;
+	};
+
 private:
 
 	RenderHub& m_hub;
+	geo::CanonicalShapes m_canonical_shapes {};
 };
 
 
@@ -174,6 +182,20 @@ private:
 
 	mat4 m_mtx_P_ortho {1.0f};
 };
+
+
+class EnvironmentPass
+{
+public:
+	EnvironmentPass() = default;
+
+public:
+	void execute(
+		const geo::CanonicalShapes& canonical_shapes,
+		BindingContext&             binding_ctx
+	);
+};
+
 
 } // hpr::rdr
 

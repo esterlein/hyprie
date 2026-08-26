@@ -124,6 +124,8 @@ inline void handle_event(const sapp_event* event, InputState& state)
 		if (event->key_code == SAPP_KEYCODE_F6)  { state.key_f6_press  = true; }
 
 		if (event->key_code == SAPP_KEYCODE_F9)  { state.key_f9_press  = true; }
+		if (event->key_code == SAPP_KEYCODE_F10) { state.key_f10_press = true; }
+		if (event->key_code == SAPP_KEYCODE_F11) { state.key_f11_press = true; }
 		if (event->key_code == SAPP_KEYCODE_F12) { state.key_f12_press = true; }
 
 		if (event->key_code == SAPP_KEYCODE_W)  { state.key_w = true; }

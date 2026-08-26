@@ -7,7 +7,7 @@
 #include <variant>
 
 
-namespace hpr {
+namespace hpr::io {
 
 
 enum class ActionKind : uint8_t
@@ -26,6 +26,7 @@ enum class ActionKind : uint8_t
 	GizmoSetTranslate,
 	GizmoSetRotate,
 	GizmoSetScale,
+	ToggleGrid,
 	DebugToggleOverlay,
 	DebugCycleLogLevel,
 	DebugToggleCore,
@@ -33,6 +34,7 @@ enum class ActionKind : uint8_t
 	DebugToggleScene,
 	DebugToggleAsset,
 	DebugToggleCulling,
+	DebugToggleBVH,
 	DebugScrollUp,
 	DebugScrollDown,
 	SnapOn,
@@ -119,6 +121,9 @@ struct GizmoSetRotateAction
 struct GizmoSetScaleAction
 {};
 
+struct ToggleGridAction
+{};
+
 struct DebugToggleOverlayAction
 {};
 
@@ -138,6 +143,9 @@ struct DebugToggleAssetAction
 {};
 
 struct DebugToggleCullingAction
+{};
+
+struct DebugToggleBVHAction
 {};
 
 struct DebugScrollUp
@@ -170,6 +178,7 @@ using ActionPayload = std::variant <
 	GizmoSetTranslateAction,
 	GizmoSetRotateAction,
 	GizmoSetScaleAction,
+	ToggleGridAction,
 	DebugToggleOverlayAction,
 	DebugCycleLogLevelAction,
 	DebugToggleCoreAction,
@@ -177,6 +186,7 @@ using ActionPayload = std::variant <
 	DebugToggleSceneAction,
 	DebugToggleAssetAction,
 	DebugToggleCullingAction,
+	DebugToggleBVHAction,
 	DebugScrollUp,
 	DebugScrollDown,
 	SnapOnAction,
@@ -191,5 +201,5 @@ struct Action
 	ActionPayload payload;
 };
 
-} // hpr
+} // hpr::io
 

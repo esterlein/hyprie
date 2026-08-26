@@ -119,10 +119,19 @@ public:
 			ToggleCameraModeAction payload {};
 			current_actions.push_back({ActionKind::CameraModeToggle, payload});
 		}
+		if (input_state.key_f10_press) {
+			ToggleGridAction payload {};
+			current_actions.push_back({ActionKind::ToggleGrid, payload});
+		}
+		if (input_state.key_f11_press) {
+			DebugToggleBVHAction payload {};
+			current_actions.push_back({ActionKind::DebugToggleBVH, payload});
+		}
 		if (input_state.key_f12_press) {
 			DebugToggleCullingAction payload {};
 			current_actions.push_back({ActionKind::DebugToggleCulling, payload});
 		}
+
 
 
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fwd.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
 
@@ -22,6 +23,7 @@ using mat3 = glm::mat3;
 using mat4 = glm::mat4;
 using quat = glm::quat;
 
+using u8vec3 = glm::u8vec3;
 
 struct v3f32
 {

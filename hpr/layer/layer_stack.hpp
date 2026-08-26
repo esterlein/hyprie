@@ -24,14 +24,14 @@
 #include <algorithm>
 
 
-namespace hpr {
+namespace hpr::lyr {
 
 
 namespace cfg {
 
 static constexpr uint32_t cmd_stream_capacity = 256U * 1024U;
 
-} // hpr::cfg
+} // hpr::lyr::cfg
 
 
 class SceneLayer;
@@ -155,34 +155,34 @@ public:
 		return event.handled;
 	}
 
-	bool on_actions(std::span<const Action> actions)
+	bool on_actions(std::span<const io::Action> actions)
 	{
 		bool action_consumed = false;
 
-		for (const Action& action : actions) {
+		for (const io::Action& action : actions) {
 			switch (action.kind) {
-			case ActionKind::Orbit: {
-				const auto& payload = std::get<OrbitAction>(action.payload);
+			case io::ActionKind::Orbit: {
+				const auto& payload = std::get<io::OrbitAction>(action.payload);
 				m_cam_controller.delta.orbit_x += payload.delta_x;
 				m_cam_controller.delta.orbit_y += payload.delta_y;
 				action_consumed = true;
 			}
 			break;
-			case ActionKind::Pan: {
-				const auto& payload = std::get<PanAction>(action.payload);
+			case io::ActionKind::Pan: {
+				const auto& payload = std::get<io::PanAction>(action.payload);
 				m_cam_controller.delta.pan_x += payload.delta_x;
 				m_cam_controller.delta.pan_y += payload.delta_y;
 				action_consumed = true;
 			}
 			break;
-			case ActionKind::Dolly: {
-				const auto& payload = std::get<DollyAction>(action.payload);
+			case io::ActionKind::Dolly: {
+				const auto& payload = std::get<io::DollyAction>(action.payload);
 				m_cam_controller.delta.dolly += payload.amount;
 				action_consumed = true;
 			}
 			break;
-			case ActionKind::Move: {
-				const auto& payload = std::get<MoveAction>(action.payload);
+			case io::ActionKind::Move: {
+				const auto& payload = std::get<io::MoveAction>(action.payload);
 				m_cam_controller.delta.move_forward = payload.forward;
 				m_cam_controller.delta.move_right   = payload.right;
 				m_cam_controller.delta.move_up      = payload.up;
@@ -190,7 +190,7 @@ public:
 			}
 			break;
 
-			case ActionKind::CameraModeToggle: {
+			case io::ActionKind::CameraModeToggle: {
 				m_cam_controller.mode =
 					m_cam_controller.mode == scn::CameraController::Mode::iso
 					? scn::CameraController::Mode::fly
@@ -322,5 +322,5 @@ private:
 	alignas(8) std::array<uint8_t, cfg::cmd_stream_capacity> m_cmd_buffer {};
 };
 
-} // hpr
+} // hpr::lyr
 

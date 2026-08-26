@@ -1,19 +1,20 @@
 #pragma once
 
 #include "hprint.hpp"
-
-
 #include "math.hpp"
-
-#include "scene.hpp"
-
-#include "render_context.hpp"
+#include "entity.hpp"
 
 #include <limits>
 
 
-
 namespace hpr::scn {
+
+
+namespace cfg {
+
+inline constexpr uint32_t bvh_max_depth = 64U;
+
+} // hpr::scn::cfg
 
 
 struct Ray
@@ -22,37 +23,30 @@ struct Ray
 	vec3 direction;
 };
 
+struct PickRayCtx
+{
+	Ray  ray        {};
+	bool is_pending {false};
+
+	uint32_t tested_node_idxs[cfg::bvh_max_depth];
+	uint32_t path_node_idxs[cfg::bvh_max_depth];
+
+	uint32_t tested_node_cnt {0};
+	uint32_t path_node_cnt   {0};
+};
 
 struct RayHit
 {
-	bool        is_hit               {false};
-	ecs::Entity entity               {ecs::ctx::invalid_entity};
-	uint32_t    submesh              {std::numeric_limits<uint32_t>::max()};
+	bool        is_hit           {false};
+	ecs::Entity entity           {ecs::ctx::invalid_entity};
+	uint32_t    submesh          {std::numeric_limits<uint32_t>::max()};
 	float       closest_hit_dist {std::numeric_limits<float>::infinity()};
-};
 
+	uint32_t tested_node_idxs[cfg::bvh_max_depth];
+	uint32_t tested_node_cnt {0};
 
-struct RaycastAsyncResult
-{
-	RayHit ray_hit {};
-
-	static_assert(sizeof(RayHit) <= 64U);
-	uint8_t pad[64U - sizeof(RayHit)]; 
-};
-
-
-struct RaycastJobSlice
-{
-	uint32_t begin;
-	uint32_t end;
-
-	Ray  ray;
-	vec3 inv_direction;
-
-	const scn::SceneRenderRig* rig;
-	const rdr::StagingContext* staging_ctx;
-
-	RaycastAsyncResult* async_result;
+	uint32_t path_node_idxs[cfg::bvh_max_depth];
+	uint32_t path_node_cnt {0};
 };
 
 

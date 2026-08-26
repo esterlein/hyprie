@@ -26,12 +26,20 @@
 #include "cue_wire.glsl.h"
 #include "grid.glsl.h"
 #include "scene.glsl.h"
+#include "scene_skinned.glsl.h"
 #include "bitmap.glsl.h"
 #include "overlay.glsl.h"
 #include "overlay_wire.glsl.h"
 #include "outline_mask.glsl.h"
 #include "outline_blend.glsl.h"
 #include "outline_dilate.glsl.h"
+
+#include "skybox.glsl.h"
+
+#include "ibl_equirect.glsl.h"
+#include "ibl_irradiance.glsl.h"
+#include "ibl_prefilter.glsl.h"
+#include "ibl_brdf.glsl.h"
 
 #include <cstddef>
 
@@ -44,29 +52,43 @@ RenderForge::RenderForge(
 	const ForgeResolver& resolver,
 	SurfaceInfo          surface_info
 )
-	: m_hub              {hub}
-	, m_surface_info     {std::move(surface_info)}
-	, m_resolver         {resolver}
-	, m_scene_mass       {40'000'000U, 80'000'000U}
-	, m_generic_mass     {    65'536U,    262'144U}
-	, m_bitmap_mass      {    65'536U,    262'144U}
-	, m_scene_trs_mass   {   500'000U}
-	, m_cue_trs_mass     {     1'000U}
+	: m_hub               {hub}
+	, m_surface_info      {std::move(surface_info)}
+	, m_resolver          {resolver}
+	, m_scene_mass        {40'000'000U, 80'000'000U}
+	, m_anim_mass         { 1'000'000U,  4'000'000U}
+	, m_generic_mass      {    65'536U,    262'144U}
+	, m_bitmap_mass       {    65'536U,    262'144U}
+	, m_scene_blob_mass   {   500'000U}
+	, m_anim_blob_mass    {     1'000U}
+	, m_bone_blob_mass    {    10'000U}
+	, m_cue_blob_mass     {   262'144U}
 	, m_vtx_ssbo_mass     {   262'144U}
 	, m_idx_ssbo_mass     {   262'144U}
-	, m_overlay_trs_mass {     1'000U}
-	, m_mat_inst_mass    {     1'000U}
+	, m_overlay_blob_mass {     1'000U}
+	, m_mat_inst_mass     {     1'000U}
 {
-	init_pipeline_scene();
+	init_pipeline_scene_static();
+	init_pipeline_scene_skinned();
+
 	init_pipeline_bitmap();
+	init_pipeline_grid();
+
 	init_pipeline_cue_solid();
 	init_pipeline_cue_wire();
 	init_pipeline_overlay_solid();
 	init_pipeline_overlay_wire();
-	init_pipeline_grid();
+
 	init_pipeline_mask();
 	init_pipeline_dilate();
 	init_pipeline_blend();
+
+	init_pipeline_skybox();
+
+	init_pipeline_ibl_equirect();
+	init_pipeline_ibl_irradiance();
+	init_pipeline_ibl_prefilter();
+	init_pipeline_ibl_brdf();
 
 	create_palette();
 
@@ -163,7 +185,7 @@ bool RenderForge::on_event(Event& event)
 }
 
 
-void RenderForge::init_pipeline_scene()
+void RenderForge::init_pipeline_scene_static()
 {
 	const sg_shader_desc* shader_desc = scene_main_shader_desc(sg_query_backend());
 	sg_shader shader = sg_make_shader(shader_desc);
@@ -186,11 +208,48 @@ void RenderForge::init_pipeline_scene()
 	pipeline_desc.layout.attrs[ATTR_scene_main_uv0_in].format = SG_VERTEXFORMAT_USHORT2N;
 	pipeline_desc.layout.attrs[ATTR_scene_main_uv0_in].offset = offsetof(SceneVertex, uv0);
 
-	pipeline_desc.layout.attrs[ATTR_scene_main_uv1_in].format = SG_VERTEXFORMAT_USHORT2N;
-	pipeline_desc.layout.attrs[ATTR_scene_main_uv1_in].offset = offsetof(SceneVertex, uv1);
+	pipeline_desc.index_type          = SG_INDEXTYPE_UINT32;
+	pipeline_desc.depth.compare       = SG_COMPAREFUNC_LESS_EQUAL;
+	pipeline_desc.depth.write_enabled = true;
+	pipeline_desc.cull_mode           = SG_CULLMODE_BACK;
+	pipeline_desc.face_winding        = SG_FACEWINDING_CCW;
+	pipeline_desc.sample_count        = m_surface_info.sample_count;
 
-	pipeline_desc.layout.attrs[ATTR_scene_main_rgb_in].format = SG_VERTEXFORMAT_UBYTE4N;
-	pipeline_desc.layout.attrs[ATTR_scene_main_rgb_in].offset = offsetof(SceneVertex, rgb);
+	m_pipelines.scene_static = {
+		.shader   = shader,
+		.pipeline = sg_make_pipeline(&pipeline_desc)
+	};
+}
+
+
+void RenderForge::init_pipeline_scene_skinned()
+{
+	const sg_shader_desc* shader_desc = scene_skinned_main_shader_desc(sg_query_backend());
+	sg_shader shader = sg_make_shader(shader_desc);
+
+	sg_pipeline_desc pipeline_desc {};
+	pipeline_desc.shader = shader;
+
+	pipeline_desc.layout.buffers[0].stride    = sizeof(AnimVertex);
+	pipeline_desc.layout.buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE;
+
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_pos_in].format = SG_VERTEXFORMAT_FLOAT3;
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_pos_in].offset = offsetof(AnimVertex, pos);
+
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_nrm_in].format = SG_VERTEXFORMAT_UINT10_N2;
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_nrm_in].offset = offsetof(AnimVertex, nrm);
+
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_tan_in].format = SG_VERTEXFORMAT_UINT10_N2;
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_tan_in].offset = offsetof(AnimVertex, tan);
+
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_uv0_in].format = SG_VERTEXFORMAT_USHORT2N;
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_uv0_in].offset = offsetof(AnimVertex, uv0);
+
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_jnt_in].format = SG_VERTEXFORMAT_UBYTE4;
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_jnt_in].offset = offsetof(AnimVertex, jnt);
+
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_wgt_in].format = SG_VERTEXFORMAT_UBYTE4N;
+	pipeline_desc.layout.attrs[ATTR_scene_skinned_main_wgt_in].offset = offsetof(AnimVertex, wgt);
 
 	pipeline_desc.index_type          = SG_INDEXTYPE_UINT32;
 	pipeline_desc.depth.compare       = SG_COMPAREFUNC_LESS_EQUAL;
@@ -199,9 +258,9 @@ void RenderForge::init_pipeline_scene()
 	pipeline_desc.face_winding        = SG_FACEWINDING_CCW;
 	pipeline_desc.sample_count        = m_surface_info.sample_count;
 
-	m_pipelines.scene_pbr = {
-		.shader   = shader,
-		.pipeline = sg_make_pipeline(&pipeline_desc)
+	m_pipelines.scene_skinned = {
+	    .shader   = shader,
+	    .pipeline = sg_make_pipeline(&pipeline_desc)
 	};
 }
 
@@ -521,6 +580,160 @@ void RenderForge::init_pipeline_blend()
 }
 
 
+void RenderForge::init_pipeline_skybox()
+{
+	const sg_shader_desc* shader_desc = skybox_main_shader_desc(sg_query_backend());
+	sg_shader shader = sg_make_shader(shader_desc);
+
+	sg_pipeline_desc pipeline_desc {};
+	pipeline_desc.shader = shader;
+
+	pipeline_desc.layout.buffers[0].stride = sizeof(GenericVertex);
+	pipeline_desc.layout.attrs[ATTR_skybox_main_pos_in].format = SG_VERTEXFORMAT_FLOAT3;
+	pipeline_desc.layout.attrs[ATTR_skybox_main_pos_in].offset = offsetof(GenericVertex, pos);
+
+	pipeline_desc.index_type         = SG_INDEXTYPE_UINT32;
+	pipeline_desc.depth.compare      = SG_COMPAREFUNC_LESS_EQUAL;
+	pipeline_desc.depth.write_enabled = false;
+	pipeline_desc.cull_mode          = SG_CULLMODE_NONE;
+	pipeline_desc.face_winding       = SG_FACEWINDING_CCW;
+	pipeline_desc.sample_count       = m_surface_info.sample_count;
+
+	m_pipelines.skybox = {
+		.shader   = shader,
+		.pipeline = sg_make_pipeline(&pipeline_desc)
+	};
+}
+
+
+void RenderForge::init_pipeline_ibl_equirect()
+{
+	const sg_shader_desc* shader_desc = ibl_equirect_main_shader_desc(sg_query_backend());
+	sg_shader shader = sg_make_shader(shader_desc);
+	
+	sg_pipeline_desc pipeline_desc {};
+	pipeline_desc.shader = shader;
+	
+	pipeline_desc.layout.buffers[0].stride = sizeof(GenericVertex);
+	
+	pipeline_desc.layout.attrs[ATTR_ibl_equirect_main_pos_in].buffer_index = 0;
+	pipeline_desc.layout.attrs[ATTR_ibl_equirect_main_pos_in].format = SG_VERTEXFORMAT_FLOAT3;
+	pipeline_desc.layout.attrs[ATTR_ibl_equirect_main_pos_in].offset = offsetof(GenericVertex, pos);
+	
+	pipeline_desc.index_type          = SG_INDEXTYPE_UINT32;
+	pipeline_desc.depth.compare       = SG_COMPAREFUNC_ALWAYS;
+	pipeline_desc.depth.write_enabled = false;
+	pipeline_desc.cull_mode           = SG_CULLMODE_NONE;
+	pipeline_desc.face_winding        = SG_FACEWINDING_CCW;
+	
+	pipeline_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
+	pipeline_desc.depth.pixel_format     = SG_PIXELFORMAT_NONE;
+	pipeline_desc.sample_count           = 1;
+	
+	m_pipelines.ibl_equirect = {
+		.shader   = shader,
+		.pipeline = sg_make_pipeline(&pipeline_desc)
+	};
+}
+
+
+void RenderForge::init_pipeline_ibl_irradiance()
+{
+	const sg_shader_desc* shader_desc = ibl_irradiance_main_shader_desc(sg_query_backend());
+	sg_shader shader = sg_make_shader(shader_desc);
+	
+	sg_pipeline_desc pipeline_desc {};
+	pipeline_desc.shader = shader;
+	
+	pipeline_desc.layout.buffers[0].stride = sizeof(GenericVertex);
+	
+	pipeline_desc.layout.attrs[ATTR_ibl_irradiance_main_pos_in].buffer_index = 0;
+	pipeline_desc.layout.attrs[ATTR_ibl_irradiance_main_pos_in].format = SG_VERTEXFORMAT_FLOAT3;
+	pipeline_desc.layout.attrs[ATTR_ibl_irradiance_main_pos_in].offset = offsetof(GenericVertex, pos);
+	
+	pipeline_desc.index_type          = SG_INDEXTYPE_UINT32;
+	pipeline_desc.depth.compare       = SG_COMPAREFUNC_ALWAYS;
+	pipeline_desc.depth.write_enabled = false;
+	pipeline_desc.cull_mode           = SG_CULLMODE_NONE;
+	pipeline_desc.face_winding        = SG_FACEWINDING_CCW;
+	
+	pipeline_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
+	pipeline_desc.depth.pixel_format     = SG_PIXELFORMAT_NONE;
+	pipeline_desc.sample_count           = 1;
+	
+	m_pipelines.ibl_irradiance = {
+		.shader   = shader,
+		.pipeline = sg_make_pipeline(&pipeline_desc)
+	};
+}
+
+
+void RenderForge::init_pipeline_ibl_prefilter()
+{
+	const sg_shader_desc* shader_desc = ibl_prefilter_main_shader_desc(sg_query_backend());
+	sg_shader shader = sg_make_shader(shader_desc);
+	
+	sg_pipeline_desc pipeline_desc {};
+	pipeline_desc.shader = shader;
+	
+	pipeline_desc.layout.buffers[0].stride = sizeof(GenericVertex);
+	
+	pipeline_desc.layout.attrs[ATTR_ibl_prefilter_main_pos_in].buffer_index = 0;
+	pipeline_desc.layout.attrs[ATTR_ibl_prefilter_main_pos_in].format = SG_VERTEXFORMAT_FLOAT3;
+	pipeline_desc.layout.attrs[ATTR_ibl_prefilter_main_pos_in].offset = offsetof(GenericVertex, pos);
+	
+	pipeline_desc.index_type          = SG_INDEXTYPE_UINT32;
+	pipeline_desc.depth.compare       = SG_COMPAREFUNC_ALWAYS;
+	pipeline_desc.depth.write_enabled = false;
+	pipeline_desc.cull_mode           = SG_CULLMODE_NONE;
+	pipeline_desc.face_winding        = SG_FACEWINDING_CCW;
+	
+	pipeline_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
+	pipeline_desc.depth.pixel_format     = SG_PIXELFORMAT_NONE;
+	pipeline_desc.sample_count           = 1;
+	
+	m_pipelines.ibl_prefilter = {
+		.shader   = shader,
+		.pipeline = sg_make_pipeline(&pipeline_desc)
+	};
+}
+
+
+void RenderForge::init_pipeline_ibl_brdf()
+{
+	const sg_shader_desc* shader_desc = ibl_brdf_main_shader_desc(sg_query_backend());
+	sg_shader shader = sg_make_shader(shader_desc);
+	
+	sg_pipeline_desc pipeline_desc {};
+	pipeline_desc.shader = shader;
+	
+	pipeline_desc.layout.buffers[0].stride = sizeof(GenericVertex);
+	
+	pipeline_desc.layout.attrs[ATTR_ibl_brdf_main_pos_in].buffer_index = 0;
+	pipeline_desc.layout.attrs[ATTR_ibl_brdf_main_pos_in].format = SG_VERTEXFORMAT_FLOAT3;
+	pipeline_desc.layout.attrs[ATTR_ibl_brdf_main_pos_in].offset = offsetof(GenericVertex, pos);
+	
+	pipeline_desc.layout.attrs[ATTR_ibl_brdf_main_uv_in].buffer_index = 0;
+	pipeline_desc.layout.attrs[ATTR_ibl_brdf_main_uv_in].format = SG_VERTEXFORMAT_USHORT2N;
+	pipeline_desc.layout.attrs[ATTR_ibl_brdf_main_uv_in].offset = offsetof(GenericVertex, uv);
+	
+	pipeline_desc.index_type          = SG_INDEXTYPE_UINT32;
+	pipeline_desc.depth.compare       = SG_COMPAREFUNC_ALWAYS;
+	pipeline_desc.depth.write_enabled = false;
+	pipeline_desc.cull_mode           = SG_CULLMODE_NONE;
+	pipeline_desc.face_winding        = SG_FACEWINDING_CCW;
+	
+	pipeline_desc.colors[0].pixel_format = SG_PIXELFORMAT_RG16F;
+	pipeline_desc.depth.pixel_format     = SG_PIXELFORMAT_NONE;
+	pipeline_desc.sample_count           = 1;
+	
+	m_pipelines.ibl_brdf = {
+		.shader   = shader,
+		.pipeline = sg_make_pipeline(&pipeline_desc)
+	};
+}
+
+
 Model RenderForge::create_model(const res::ImportModel& import_model)
 {
 	Model model;
@@ -531,6 +744,12 @@ Model RenderForge::create_model(const res::ImportModel& import_model)
 	model.meshes.resize(mesh_count);
 	model.materials.resize(mat_count);
 
+	model.mesh_vtx_bases.resize(mesh_count);
+	model.mesh_idx_firsts.resize(mesh_count);
+	model.material_ssbo_idxs.resize(mat_count);
+
+	/* create meshes */
+
 	for (uint32_t mesh_idx = 0; mesh_idx < mesh_count; ++mesh_idx) {
 		const res::ImportMesh& import_mesh = import_model.meshes[mesh_idx];
 
@@ -538,8 +757,8 @@ Model RenderForge::create_model(const res::ImportModel& import_model)
 		auto& nrm_attr = import_mesh.vtx_attributes[static_cast<size_t>(res::AttrType::nrm)];
 		auto& tan_attr = import_mesh.vtx_attributes[static_cast<size_t>(res::AttrType::tan)];
 		auto& uv0_attr = import_mesh.vtx_attributes[static_cast<size_t>(res::AttrType::uv0)];
-		auto& uv1_attr = import_mesh.vtx_attributes[static_cast<size_t>(res::AttrType::uv1)];
-		auto& rgb_attr = import_mesh.vtx_attributes[static_cast<size_t>(res::AttrType::rgb)];
+		auto& jnt_attr = import_mesh.vtx_attributes[static_cast<size_t>(res::AttrType::jnt)];
+		auto& wgt_attr = import_mesh.vtx_attributes[static_cast<size_t>(res::AttrType::wgt)];
 
 		const vec3* pos_data = reinterpret_cast<const vec3*>(pos_attr.blob.data());
 		const vec3* nrm_data = reinterpret_cast<const vec3*>(nrm_attr.blob.data());
@@ -550,46 +769,81 @@ Model RenderForge::create_model(const res::ImportModel& import_model)
 		const vec2* uv0_data = uv0_attr.blob.empty()
 			? nullptr
 			: reinterpret_cast<const vec2*>(uv0_attr.blob.data());
-		const vec2* uv1_data = uv1_attr.blob.empty()
-			? nullptr
-			: reinterpret_cast<const vec2*>(uv1_attr.blob.data());
-		const vec4* rgb_data = rgb_attr.blob.empty()
-			? nullptr
-			: reinterpret_cast<const vec4*>(rgb_attr.blob.data());
 
-		const uint32_t vtx_count = static_cast<uint32_t>(pos_attr.blob.size() / sizeof(vec3));
+		const bool is_skinned =
+			!import_model.skins.empty() && !import_model.animations.empty();
 
-		mtp::vault<SceneVertex, mtp::default_set> packed_vertices;
-		packed_vertices.resize(vtx_count);
+		const uint8_t* jnt_data = is_skinned
+			? reinterpret_cast<const uint8_t*>(jnt_attr.blob.data())
+			: nullptr;
+		const uint8_t* wgt_data = is_skinned
+			? reinterpret_cast<const uint8_t*>(wgt_attr.blob.data())
+			: nullptr;
 
-		for (uint32_t vtx_index = 0; vtx_index < vtx_count; ++vtx_index) {
-			SceneVertex& vertex = packed_vertices[vtx_index];
+		const uint32_t vtx_count =
+			static_cast<uint32_t>(pos_attr.blob.size() / sizeof(vec3));
 
-			vertex.pos = {pos_data[vtx_index].x, pos_data[vtx_index].y, pos_data[vtx_index].z};
-			vertex.nrm = pack_1010102(vec4(nrm_data[vtx_index], 1.0f));
+		if (is_skinned) {
 
-			vertex.tan = tan_data ?
-				pack_1010102(tan_data[vtx_index]) : pack_1010102(vec4(0, 0, 0, 1));
-			vertex.uv0 = uv0_data ?
-				pack_uv(uv0_data[vtx_index])      : v2u16 {0, 0};
-			vertex.uv1 = uv1_data ?
-				pack_uv(uv1_data[vtx_index])      : v2u16 {0, 0};
-			vertex.rgb = rgb_data ?
-				pack_color(rgb_data[vtx_index])   : 0xFFFFFFFF;
+			mtp::vault<AnimVertex, mtp::default_set> packed_vertices;
+			packed_vertices.resize(vtx_count);
+
+			for (uint32_t vtx_index = 0; vtx_index < vtx_count; ++vtx_index) {
+				AnimVertex& vtx = packed_vertices[vtx_index];
+
+				vtx.pos = {pos_data[vtx_index].x, pos_data[vtx_index].y, pos_data[vtx_index].z};
+				vtx.nrm = pack_1010102(vec4(nrm_data[vtx_index], 1.0f));
+
+				vtx.tan = tan_data ? pack_1010102(tan_data[vtx_index]) : pack_1010102(vec4(0, 0, 0, 1));
+				vtx.uv0 = uv0_data ? pack_uv(uv0_data[vtx_index])      : v2u16 {0, 0};
+
+				std::memcpy(vtx.jnt, &jnt_data[vtx_index * 4], 4);
+				std::memcpy(vtx.wgt, &wgt_data[vtx_index * 4], 4);
+			}
+
+			model.meshes[mesh_idx] = create_mesh<MassDomain::assembler, AnimVertex>(
+				packed_vertices,
+				import_mesh.indices,
+				import_mesh.submeshes
+			);
+		}
+		else {
+
+			mtp::vault<SceneVertex, mtp::default_set> packed_vertices;
+			packed_vertices.resize(vtx_count);
+
+			for (uint32_t vtx_index = 0; vtx_index < vtx_count; ++vtx_index) {
+				SceneVertex& vertex = packed_vertices[vtx_index];
+
+				vertex.pos = {pos_data[vtx_index].x, pos_data[vtx_index].y, pos_data[vtx_index].z};
+				vertex.nrm = pack_1010102(vec4(nrm_data[vtx_index], 1.0f));
+
+				vertex.tan = tan_data ? pack_1010102(tan_data[vtx_index]) : pack_1010102(vec4(0, 0, 0, 1));
+				vertex.uv0 = uv0_data ? pack_uv(uv0_data[vtx_index])      : v2u16 {0, 0};
+			}
+
+			model.meshes[mesh_idx] = create_mesh<MassDomain::assembler, SceneVertex>(
+				packed_vertices,
+				import_mesh.indices,
+				import_mesh.submeshes
+			);
 		}
 
-		model.meshes[mesh_idx] = create_mesh<SceneVertex>(
-			packed_vertices,
-			import_mesh.indices,
-			import_mesh.submeshes
-		);
+		const auto* mesh_ptr = m_hub.get(model.meshes[mesh_idx]);
+		model.mesh_vtx_bases[mesh_idx]  = mesh_ptr->vtx_base;
+		model.mesh_idx_firsts[mesh_idx] = mesh_ptr->idx_first;
 	}
+
+	/* create materials */
 
 	for (uint32_t mat_idx = 0; mat_idx < mat_count; ++mat_idx) {
 		Handle<res::MaterialResource> hnd_res = import_model.materials[mat_idx];
 		Handle<MaterialTemplate>      hnd_tpl = create_material_template(hnd_res);
 
 		model.materials[mat_idx] = create_material_instance(hnd_res, hnd_tpl);
+
+		const auto* mat_inst = m_hub.get(model.materials[mat_idx]);
+		model.material_ssbo_idxs[mat_idx] = mat_inst->ssbo_idx;
 	}
 
 	/* pack twin wireframe */
@@ -703,75 +957,6 @@ Model RenderForge::create_model(const res::ImportModel& import_model)
 	}
 
 	return model;
-}
-
-
-void RenderForge::emit_primitives(
-	ecs::Entity             entity,
-	const res::ImportModel& import_model,
-	const Model&            model,
-	scn::SceneRenderRig&    render_rig
-)
-{
-	const uint32_t node_count = static_cast<uint32_t>(import_model.nodes.size());
-
-	mtp::vault<mat4, mtp::default_set> node_matrices;
-	node_matrices.resize(node_count);
-
-	for (uint32_t node_idx = 0; node_idx < node_count; ++node_idx) {
-		const auto& node = import_model.nodes[node_idx];
-
-		mat4 mtx_parent = (node.parent != 0xFFFFFFFFU) 
-			? node_matrices[node.parent]
-			: mat4(1.0f);
-
-		node_matrices[node_idx] = mtx_parent * node.mtx_trs;
-
-		if (node.mesh != 0xFFFFFFFFU) {
-			const auto& import_mesh = import_model.meshes[node.mesh];
-			const auto* mesh        = m_hub.get<Mesh>(model.meshes[node.mesh]);
-
-			const vec3* pos_data = reinterpret_cast<const vec3*>(
-				import_mesh.vtx_attributes[static_cast<size_t>(res::AttrType::pos)].blob.data()
-			);
-
-			for (uint32_t sbm_idx = 0; sbm_idx < import_mesh.submeshes.size(); ++sbm_idx) {
-				const auto& import_submesh = import_mesh.submeshes[sbm_idx];
-
-				vec3 aabb_min( std::numeric_limits<float>::max());
-				vec3 aabb_max(-std::numeric_limits<float>::max());
-
-				for (uint32_t i = 0; i < import_submesh.idx_count; ++i) {
-					uint32_t raw_idx = import_mesh.indices[import_submesh.idx_first + i];
-
-					vec3 baked_pos = vec3(
-						node_matrices[node_idx] * vec4(pos_data[raw_idx + import_submesh.vtx_base], 1.0f)
-					);
-
-					aabb_min = glm::min(aabb_min, baked_pos);
-					aabb_max = glm::max(aabb_max, baked_pos);
-				}
-
-				render_rig.primitives.emplace_back(scn::ScenePrimitive {
-					.submesh = {
-						mesh->vtx_base  + import_submesh.vtx_base,
-						mesh->idx_first + import_submesh.idx_first,
-						import_submesh.idx_count
-					},
-					.mtx_L        = node_matrices[node_idx],
-					.mtx_LN       = glm::inverse(glm::transpose(mat3(node_matrices[node_idx]))),
-					.material_idx = m_hub.get<MaterialInstance>(
-						model.materials[import_submesh.model_mat_idx]
-					)->ssbo_idx,
-					.entity = entity
-				});
-
-				render_rig.matrices_M.push_back(mat4(1.0f));
-				render_rig.aabb_local.push_back({aabb_min, aabb_max});
-				render_rig.occludee_idxs.push_back(model.occludee_hull_base_idx + import_submesh.hull_idx);
-			}
-		}
-	}
 }
 
 
@@ -1008,21 +1193,30 @@ Handle<Texture> RenderForge::create_texture(
 	HPR_ASSERT(width  > 0);
 	HPR_ASSERT(height > 0);
 
-	TextureMassSlice slice = m_texture_mass.stage(
+	Texture texture = m_texture_mass.stage(
 		pix_data,
 		width,
 		height,
 		pix_format
 	);
 
-	Texture texture {
-		.array  = slice.array,
-		.slice  = slice.slice,
-		.width  = slice.width,
-		.height = slice.height
-	};
-
 	return m_hub.create<Texture>(std::move(texture));
+}
+
+
+Handle<Environment> RenderForge::create_environment(
+	const void* pixel_data,
+	uint32_t    width,
+	uint32_t    height
+)
+{
+	HPR_ASSERT(pixel_data);
+	HPR_ASSERT(width  > 0);
+	HPR_ASSERT(height > 0);
+
+	Environment environment = m_environment_mass.stage(pixel_data, width, height);
+
+	return m_hub.create<Environment>(std::move(environment));
 }
 
 
@@ -1053,7 +1247,7 @@ Handle<Texture> RenderForge::create_palette()
 	static constexpr uint32_t num_palettes       = 1;
 
 	struct RGB { uint8_t r, g, b; };
-	static constexpr std::array<RGB, 8> protozerg_colors = {{
+	static constexpr std::array<RGB, 12> protozerg_colors = {{
 
 		{128,   0, 255}, // dracula violet
 		{214,   0, 147}, // vampire fuchsia
@@ -1062,7 +1256,11 @@ Handle<Texture> RenderForge::create_palette()
 		{0,   255, 170}, // matrix mint
 		{43,  255, 119}, // biogreen
 		{212, 255,   0}, // acid yellow
-		{255,   0, 128}  // synthwave pink
+		{255,   0, 128}, // synthwave pink
+		{255,  85,   0}, // cyber orange
+		{255,   0,  64}, // laser red
+		{ 85,   0, 255}, // electric indigo
+		{255, 170,   0}  // magma gold
 	}};
 
 	std::array<uint8_t, colors_per_palette * 4> palette_data {};
@@ -1073,7 +1271,7 @@ Handle<Texture> RenderForge::create_palette()
 		palette_data[i * 4 + 0] = color.r;
 		palette_data[i * 4 + 1] = color.g;
 		palette_data[i * 4 + 2] = color.b;
-		palette_data[i * 4 + 3] = 26;
+		palette_data[i * 4 + 3] = 128;
 	}
 
 	m_palette_mass.init(palette_data.data(), num_palettes, colors_per_palette);
@@ -1258,20 +1456,24 @@ BindingContext RenderForge::binding_context()
 		.samplers  = m_sampler_bind,
 
 		.scn_vtx   = m_scene_mass.bind_state(),
+		.anm_vtx   = m_anim_mass.bind_state(),
 		.gen_vtx   = m_generic_mass.bind_state(),
 		.btm_vtx   = m_bitmap_mass.bind_state(),
 
-		.scn_trs   = m_scene_trs_mass.bind_state(),
-		.cue_trs   = m_cue_trs_mass.bind_state(),
-		.vtx_ssbo  = m_vtx_ssbo_mass.bind_state(),
-		.idx_ssbo  = m_idx_ssbo_mass.bind_state(),
-		.orl_trs   = m_overlay_trs_mass.bind_state(),
-		.mat_inst  = m_mat_inst_mass.bind_state(),
+		.scn_blob_ssbo  = m_scene_blob_mass.bind_state(),
+		.anm_blob_ssbo  = m_anim_blob_mass.bind_state(),
+		.anm_bones_ssbo = m_bone_blob_mass.bind_state(),
+		.cue_blob_ssbo  = m_cue_blob_mass.bind_state(),
+		.orl_blob_ssbo  = m_overlay_blob_mass.bind_state(),
+		.mat_inst_ssbo  = m_mat_inst_mass.bind_state(),
+
+		.vtx_gen_ssbo = m_vtx_ssbo_mass.bind_state(),
+		.idx_gen_ssbo = m_idx_ssbo_mass.bind_state(),
+
+		.environment  = m_environment_mass.bind_state(),
 
 		.pipelines = m_pipelines,
-
 		.targets   = m_targets,
-
 		.nk_atlas  = m_nk_atlas
 	};
 
@@ -1282,9 +1484,11 @@ BindingContext RenderForge::binding_context()
 StagingContext RenderForge::staging_context()
 {
 	return StagingContext {
-		&m_scene_trs_mass,
-		&m_cue_trs_mass,
-		&m_overlay_trs_mass,
+		&m_scene_blob_mass,
+		&m_cue_blob_mass,
+		&m_overlay_blob_mass,
+		&m_anim_blob_mass,
+
 		&m_mat_inst_mass,
 
 		&m_scene_mass,

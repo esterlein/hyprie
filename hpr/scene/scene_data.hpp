@@ -18,18 +18,6 @@ struct AABB
 };
 
 
-struct AABBDOD
-{
-	float min_x;
-	float min_y;
-	float min_z;
-
-	float max_x;
-	float max_y;
-	float max_z;
-};
-
-
 struct Transform
 {
 	vec3 position {0.0f};
@@ -58,18 +46,6 @@ struct SceneLight
 	vec3    color_rgb;
 };
 
-
-struct ScenePrimitive
-{
-	rdr::Submesh submesh;
-
-	mat4 mtx_L;
-	mat3 mtx_LN;
-
-	uint32_t material_idx;
-
-	ecs::Entity entity;
-};
 
 } // hpr::scn
 

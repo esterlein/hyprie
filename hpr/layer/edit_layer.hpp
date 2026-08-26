@@ -22,7 +22,7 @@
 #include <span>
 
 
-namespace hpr {
+namespace hpr::lyr {
 
 
 class EditLayer : public Layer, public EventEmitter, public CommandEmitter
@@ -49,7 +49,7 @@ public:
 	bool on_event(Event& event) override;
 	void on_result(Event& event) override;
 
-	bool on_actions(const scn::SceneContext& scn_ctx, std::span<const Action> actions) override;
+	bool on_actions(const scn::SceneContext& scn_ctx, std::span<const io::Action> actions) override;
 	void on_update(scn::SceneContext& scn_ctx, float delta_time) override;
 	void on_submit(const scn::SceneContext& scn_ctx, uint32_t layer_idx) override;
 
@@ -77,5 +77,5 @@ private:
 	CmdStream*  m_cmd_stream  {nullptr};
 };
 
-} // hpr
+} // hpr::lyr
 

@@ -62,5 +62,16 @@ struct LightComponent
 	vec3    color_rgb;
 };
 
+
+struct AnimComponent
+{
+	uint32_t skeleton_idx;
+	uint32_t clip_idx;
+
+	float local_time;
+
+	uint32_t base_pose_idx; 
+};
+
 } // hpr::ecs
 

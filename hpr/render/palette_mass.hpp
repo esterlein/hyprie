@@ -78,8 +78,8 @@ public:
 
 private:
 
-	sg_image   m_image   {};
-	sg_view    m_view    {};
+	sg_image m_image {};
+	sg_view  m_view  {};
 };
 
 } // hpr::rdr

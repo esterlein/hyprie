@@ -21,6 +21,7 @@ concept CPUResource =
 	std::is_same_v<T, Texture>          ||
 	std::is_same_v<T, MaterialTemplate> ||
 	std::is_same_v<T, MaterialInstance> ||
+	std::is_same_v<T, Environment> ||
 	std::is_same_v<T, Font>;
 
 
@@ -33,6 +34,7 @@ public:
 		, m_texture_store      {4096}
 		, m_mat_template_store {1024}
 		, m_mat_instance_store {4096}
+		, m_environment_store  {32}
 		, m_font_store         {8}
 	{}
 
@@ -99,6 +101,8 @@ private:
 			return m_mat_template_store;
 		else if constexpr (std::is_same_v<T, MaterialInstance>)
 			return m_mat_instance_store;
+		else if constexpr (std::is_same_v<T, Environment>)
+			return m_environment_store;
 		else if constexpr (std::is_same_v<T, Font>)
 			return m_font_store;
 	}
@@ -114,6 +118,8 @@ private:
 			return m_mat_template_store;
 		else if constexpr (std::is_same_v<T, MaterialInstance>)
 			return m_mat_instance_store;
+		else if constexpr (std::is_same_v<T, Environment>)
+			return m_environment_store;
 		else if constexpr (std::is_same_v<T, Font>)
 			return m_font_store;
 	}
@@ -124,6 +130,7 @@ private:
 	res::HandleStore<Texture>          m_texture_store;
 	res::HandleStore<MaterialTemplate> m_mat_template_store;
 	res::HandleStore<MaterialInstance> m_mat_instance_store;
+	res::HandleStore<Environment>      m_environment_store;
 	res::HandleStore<Font>             m_font_store;
 };
 

@@ -43,9 +43,7 @@ public:
 	AssetKeeper(AssetKeeper&&) noexcept = default;
 	AssetKeeper& operator=(AssetKeeper&&) = delete;
 
-
 	Handle<ImportModel> import_gltf_model(const char* path);
-
 
 	template<supported_asset T>
 	AssetBank<T>& storage()
@@ -92,6 +90,8 @@ private:
 		const cgltf_accessor* uv1 {nullptr};
 		const cgltf_accessor* rgb {nullptr};
 		const cgltf_accessor* ext {nullptr};
+		const cgltf_accessor* jnt {nullptr};
+		const cgltf_accessor* wgt {nullptr};
 	};
 
 	Handle<GltfResource> load_gltf(const char* path);
@@ -143,7 +143,11 @@ private:
 		const cgltf_data*    gltf_root
 	);
 
+	ImageResource make_hdr_image(const char* path);
+
 public:
+
+	Handle<ImageResource> import_hdr_image(const char* path);
 
 	Handle<ImageResource> add_memory_image(
 		const char*              key,

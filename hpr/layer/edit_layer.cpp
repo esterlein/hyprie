@@ -1,17 +1,17 @@
-#include "hpr/event/event_emitter.hpp"
+#include "edit_layer.hpp"
+
+#include "event_emitter.hpp"
 #include "nuklear_cfg.hpp"
 
-#include "action.hpp"
 #include "event_dispatcher.hpp"
 
-#include "edit_layer.hpp"
 #include "render_data.hpp"
 #include "inspector_state.hpp"
 #include "command_stream.hpp"
 
 
 
-namespace hpr {
+namespace hpr::lyr {
 
 
 void EditLayer::on_attach()
@@ -109,12 +109,12 @@ bool EditLayer::on_event(Event& event)
 }
 
 
-bool EditLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const Action> actions)
+bool EditLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const io::Action> actions)
 {
 	m_ui_context.sync_input_screen(m_input_state);
 
-	for (const Action& action : actions) {
-		if (action.kind == ActionKind::SelectClick) {
+	for (const io::Action& action : actions) {
+		if (action.kind == io::ActionKind::SelectClick) {
 
 			if (m_ui_context.wants_mouse()) {
 				return true;
@@ -206,5 +206,5 @@ void EditLayer::on_submit(const scn::SceneContext& scene_ctx, uint32_t layer_ind
 void EditLayer::on_result(Event& event)
 {}
 
-} // hpr
+} // hpr::lyr
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "scene.hpp"
 #include "scene_io.hpp"
+#include "scene_rig.hpp"
 #include "scene_core.hpp"
 #include "scene_data.hpp"
 
@@ -40,7 +40,7 @@ public:
 		}
 
 		scn::Scene scene {};
-		if (!scn::instantiate(
+		if (!scn::instantiate_scene(
 			scene_doc,
 			m_registry,
 			m_asset_keeper,

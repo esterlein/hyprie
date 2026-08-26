@@ -73,7 +73,7 @@ void main()
 
 	vec2 dist_minor  = abs(fract(coord - 0.5) - 0.5);
 	vec2 width_minor = half_width * deriv;
-	vec2 aa_minor    = deriv; // 1-pixel soft anti-aliasing band
+	vec2 aa_minor    = deriv;
 	
 	vec2 line_minor_axes = smoothstep(width_minor + aa_minor, width_minor - aa_minor, dist_minor);
 	float line_minor     = max(line_minor_axes.x, line_minor_axes.y);

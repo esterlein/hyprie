@@ -61,11 +61,19 @@ struct SceneLayerStats
 
 	double hiz_raster_ms {0.0};
 	double cull_job_ms   {0.0};
-	double ray_job_ms    {0.0};
+	double tlas_ms       {0.0};
+	double raycast_ms    {0.0};
 
 	void reset()
 	{
-		*this = SceneLayerStats {};
+		frust_tested = 0;
+		frust_culled = 0;
+		occl_tested  = 0;
+		occl_culled  = 0;
+
+		hiz_raster_ms = 0;
+		cull_job_ms   = 0;
+		tlas_ms       = 0;
 	}
 };
 

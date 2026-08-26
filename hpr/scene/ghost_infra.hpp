@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint>
+#include "hprint.hpp"
 
 #include "mtp_memory.hpp"
 

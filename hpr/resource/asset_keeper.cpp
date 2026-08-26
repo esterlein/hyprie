@@ -181,6 +181,8 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 			const uint32_t prim_vtx_count =
 				static_cast<uint32_t>(vtx_accessors.pos->count);
 
+			/* position */
+
 			auto& pos_attr = import_mesh.vtx_attributes[static_cast<size_t>(AttrType::pos)];
 			if (pos_attr.blob.size() > 0) {
 				if (vtx_accessors.pos) {
@@ -215,6 +217,8 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 				);
 				return {};
 			}
+
+			/* normal */
 
 			auto& nrm_attr = import_mesh.vtx_attributes[static_cast<size_t>(AttrType::nrm)];
 			if (nrm_attr.blob.size() > 0) {
@@ -251,6 +255,8 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 				return {};
 			}
 
+			/* tangent */
+
 			auto& tan_attr = import_mesh.vtx_attributes[static_cast<size_t>(AttrType::tan)];
 			if (tan_attr.blob.size() > 0) {
 				if (vtx_accessors.tan) {
@@ -277,6 +283,8 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 					return {};
 				}
 			}
+
+			/* uv 0 */
 
 			auto& uv0_attr = import_mesh.vtx_attributes[static_cast<size_t>(AttrType::uv0)];
 			if (uv0_attr.blob.size() > 0) {
@@ -305,6 +313,8 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 				}
 			}
 
+			/* uv 1 */
+
 			auto& uv1_attr = import_mesh.vtx_attributes[static_cast<size_t>(AttrType::uv1)];
 			if (uv1_attr.blob.size() > 0) {
 				if (vtx_accessors.uv1) {
@@ -332,6 +342,8 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 				}
 			}
 
+			/* color */
+
 			auto& rgb_attr = import_mesh.vtx_attributes[static_cast<size_t>(AttrType::rgb)];
 			if (rgb_attr.blob.size() > 0) {
 				if (vtx_accessors.rgb) {
@@ -353,6 +365,74 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 					HPR_ERROR(
 						log::LogCategory::asset,
 						"[import_gltf_model] mesh [%zu] missing rgb accessor",
+						mesh_idx
+					);
+					return {};
+				}
+			}
+
+			/* joint */
+
+			auto& jnt_attr = import_mesh.vtx_attributes[static_cast<size_t>(AttrType::jnt)];
+			if (jnt_attr.blob.size() > 0) {
+				if (vtx_accessors.jnt) {
+					size_t write_offset = vtx_cursor     * 4 * sizeof(uint8_t);
+					size_t write_size   = prim_vtx_count * 4 * sizeof(uint8_t);
+					HPR_ASSERT_MSG(
+						write_offset + write_size <= jnt_attr.blob.size(),
+						"vertex jnt overflow"
+					);
+
+					uint8_t* jnt_dst = jnt_attr.blob.data() + write_offset;
+					
+					for (cgltf_size vtx = 0; vtx < prim_vtx_count; ++vtx) {
+						cgltf_uint joint[4] = {0, 0, 0, 0};
+						cgltf_accessor_read_uint(vtx_accessors.jnt, vtx, joint, 4);
+						
+						jnt_dst[vtx * 4 + 0] = static_cast<uint8_t>(joint[0]);
+						jnt_dst[vtx * 4 + 1] = static_cast<uint8_t>(joint[1]);
+						jnt_dst[vtx * 4 + 2] = static_cast<uint8_t>(joint[2]);
+						jnt_dst[vtx * 4 + 3] = static_cast<uint8_t>(joint[3]);
+					}
+				}
+				else {
+					HPR_ERROR(
+						log::LogCategory::asset,
+						"[import_gltf_model] mesh [%zu] missing jnt accessor",
+						mesh_idx
+					);
+					return {};
+				}
+			}
+
+			/* weight */
+
+			auto& wgt_attr = import_mesh.vtx_attributes[static_cast<size_t>(AttrType::wgt)];
+			if (wgt_attr.blob.size() > 0) {
+				if (vtx_accessors.wgt) {
+					size_t write_offset = vtx_cursor     * sizeof(vec4);
+					size_t write_size   = prim_vtx_count * sizeof(vec4);
+					HPR_ASSERT_MSG(
+						write_offset + write_size <= wgt_attr.blob.size(),
+						"vertex wgt overflow"
+					);
+
+					uint8_t* wgt_dst = wgt_attr.blob.data() + write_offset;
+
+					for (cgltf_size vtx = 0; vtx < prim_vtx_count; ++vtx) {
+						float weight[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+						cgltf_accessor_read_float(vtx_accessors.wgt, vtx, weight, 4);
+
+						wgt_dst[vtx * 4 + 0] = static_cast<uint8_t>(weight[0] * 255.0f);
+						wgt_dst[vtx * 4 + 1] = static_cast<uint8_t>(weight[1] * 255.0f);
+						wgt_dst[vtx * 4 + 2] = static_cast<uint8_t>(weight[2] * 255.0f);
+						wgt_dst[vtx * 4 + 3] = static_cast<uint8_t>(weight[3] * 255.0f);
+					}
+				}
+				else {
+					HPR_ERROR(
+						log::LogCategory::asset,
+						"[import_gltf_model] mesh [%zu] missing wgt accessor",
 						mesh_idx
 					);
 					return {};
@@ -424,7 +504,6 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 			idx_cursor += prim_idx_count;
 		}
 	}
-
 
 	/* node hierarchy culling */
 
@@ -555,6 +634,96 @@ Handle<ImportModel> AssetKeeper::import_gltf_model(const char* path)
 		}
 	}
 
+	/* skins extraction */
+
+	import_model.skins.resize(gltf_data->skins_count);
+
+	for (cgltf_size skin_idx = 0; skin_idx < gltf_data->skins_count; ++skin_idx) {
+		const cgltf_skin& gltf_skin = gltf_data->skins[skin_idx];
+		ImportSkeleton& import_skin = import_model.skins[skin_idx];
+
+		import_skin.joint_node_idxs.resize(gltf_skin.joints_count);
+		import_skin.mtxs_inv_bind.resize(gltf_skin.joints_count, mat4(1.0f));
+		import_skin.mtxs_L_rest.resize(gltf_skin.joints_count, mat4(1.0f));
+
+		for (cgltf_size jnt_idx = 0; jnt_idx < gltf_skin.joints_count; ++jnt_idx) {
+
+			uint32_t old_jnt_idx =
+				static_cast<uint32_t>(cgltf_node_index(gltf_data, gltf_skin.joints[jnt_idx]));
+
+			uint32_t new_jnt_idx = node_remap[old_jnt_idx];
+
+			import_skin.joint_node_idxs[jnt_idx] = node_remap[new_jnt_idx];
+
+			import_skin.mtxs_L_rest[jnt_idx] = import_model.nodes[new_jnt_idx].mtx_trs;
+		}
+
+		if (gltf_skin.inverse_bind_matrices) {
+			cgltf_accessor_unpack_floats(
+				gltf_skin.inverse_bind_matrices,
+				&import_skin.mtxs_inv_bind[0][0][0],
+				gltf_skin.joints_count * 16
+			);
+		}
+	}
+
+	/* animations extraction */
+
+	import_model.animations.resize(gltf_data->animations_count);
+
+	for (cgltf_size anim_idx = 0; anim_idx < gltf_data->animations_count; ++anim_idx) {
+		const cgltf_animation& gltf_anim   = gltf_data->animations[anim_idx];
+		ImportAnimClip&        import_clip = import_model.animations[anim_idx];
+
+		import_clip.tracks.reserve(gltf_anim.channels_count);
+		float max_time = 0.0f;
+
+		for (cgltf_size ch_idx = 0; ch_idx < gltf_anim.channels_count; ++ch_idx) {
+			const cgltf_animation_channel& channel = gltf_anim.channels[ch_idx];
+			const cgltf_animation_sampler& sampler = *channel.sampler;
+
+			if (!channel.target_node) continue;
+
+			uint32_t old_node_idx = static_cast<uint32_t>(cgltf_node_index(gltf_data, channel.target_node));
+			uint32_t new_node_idx = node_remap[old_node_idx];
+
+			if (new_node_idx == std::numeric_limits<uint32_t>::max()) continue;
+
+			// Find or create track for this node
+			auto track_it = std::find_if(
+				import_clip.tracks.begin(),
+				import_clip.tracks.end(),
+				[new_node_idx](const ImportAnimTrack& t) { return t.node_idx == new_node_idx; }
+			);
+
+			if (track_it == import_clip.tracks.end()) {
+				import_clip.tracks.push_back({ .node_idx = new_node_idx });
+				track_it = std::prev(import_clip.tracks.end());
+			}
+
+			const uint32_t key_count = static_cast<uint32_t>(sampler.input->count);
+
+			if (track_it->times.empty()) {
+				track_it->times.resize(key_count);
+				cgltf_accessor_unpack_floats(sampler.input, track_it->times.data(), key_count);
+				
+				if (key_count > 0 && track_it->times.back() > max_time) {
+					max_time = track_it->times.back();
+				}
+			}
+
+			if (channel.target_path == cgltf_animation_path_type_translation) {
+				track_it->translations.resize(key_count);
+				cgltf_accessor_unpack_floats(sampler.output, &track_it->translations[0].x, key_count * 3);
+			}
+			else if (channel.target_path == cgltf_animation_path_type_rotation) {
+				track_it->rotations.resize(key_count);
+				cgltf_accessor_unpack_floats(sampler.output, &track_it->rotations[0].x, key_count * 4);
+			}
+		}
+		import_clip.duration_ticks = max_time;
+	}
+
 	Handle<ImportModel> hnd_model = m_model_bank.add(path_str, std::move(import_model)).handle;
 
 	m_model_cache[path_str] = hnd_model;
@@ -600,6 +769,7 @@ void AssetKeeper::allocate_mesh_memory(const cgltf_mesh& gltf_mesh, ImportMesh& 
 {
 	uint32_t vtx_total = 0;
 	uint32_t idx_total = 0;
+
 	bool active_attributes[static_cast<size_t>(AttrType::count)] = {false};
 
 	for (cgltf_size prim_idx = 0; prim_idx < gltf_mesh.primitives_count; ++prim_idx) {
@@ -1076,8 +1246,8 @@ ImageResource AssetKeeper::make_gltf_image(
 
 	if (gltf_image->uri && gltf_image->buffer_view == nullptr) {
 
-		int width  = 0;
-		int height = 0;
+		int width         = 0;
+		int height        = 0;
 		int channels_file = 0;
 
 		stbi_uc* pixels_rgba =
@@ -1208,6 +1378,96 @@ ImageResource AssetKeeper::make_gltf_image(
 		stbi_image_free(pixels_rgba);
 		return image;
 	}
+
+	return image;
+}
+
+
+Handle<ImageResource> AssetKeeper::import_hdr_image(const char* path)
+{
+	if (!path || path[0] == '\0')
+		return Handle<ImageResource>::null();
+
+	if (auto* existing_image = m_image_bank.find(path))
+		return existing_image->handle;
+
+	ImageResource image = make_hdr_image(path);
+
+	if (image.width == 0 || image.height == 0 || image.channels == 0)
+		return Handle<ImageResource>::null();
+
+	Asset<ImageResource>& asset =
+		m_image_bank.add(path, std::move(image));
+
+	return asset.handle;
+}
+
+
+ImageResource AssetKeeper::make_hdr_image(const char* path)
+{
+	ImageResource image {};
+
+	constexpr int channels_expect = 4;
+
+	int width         = 0;
+	int height        = 0;
+	int channels_file = 0;
+
+	float* pixels_hdr = stbi_loadf(path, &width, &height, &channels_file, channels_expect);
+
+	HPR_DEBUG(
+		log::LogCategory::asset,
+		"[make_hdr_image][stbi_loadf][path %s][%dx%d][chs %d][%p]",
+		path,
+		width,
+		height,
+		channels_file,
+		static_cast<void*>(pixels_hdr)
+	);
+
+	if (!pixels_hdr) {
+		HPR_ERROR(
+			log::LogCategory::asset,
+			"[make_hdr_image] stbi_loadf failed [%s]",
+			path
+		);
+		return image;
+	}
+
+	image.type     = tex_environment;
+	image.width    = static_cast<uint32_t>(width);
+	image.height   = static_cast<uint32_t>(height);
+	image.channels = static_cast<uint32_t>(channels_expect);
+
+	const size_t expected_size =
+		static_cast<size_t>(width)  *
+		static_cast<size_t>(height) *
+		static_cast<size_t>(channels_expect) *
+		sizeof(float);
+
+	HPR_DEBUG(
+		log::LogCategory::asset,
+		"[make_hdr_image][before resize][bytes %zu]",
+		expected_size
+	);
+
+	image.pixels.resize(expected_size);
+
+	HPR_DEBUG(
+		log::LogCategory::asset,
+		"[make_hdr_image][after resize][data %p][size %zu][cap %zu]",
+		static_cast<void*>(image.pixels.data()),
+		image.pixels.size(),
+		image.pixels.capacity()
+	);
+
+	HPR_ASSERT_MSG(
+		image.pixels.size() == expected_size,
+		"hdr image byte size mismatch"
+	);
+
+	std::memcpy(image.pixels.data(), pixels_hdr, image.pixels.size());
+	stbi_image_free(pixels_hdr);
 
 	return image;
 }

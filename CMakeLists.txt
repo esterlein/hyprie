@@ -68,10 +68,14 @@ file(GLOB_RECURSE HYPRIE_SOURCES
 	"${CMAKE_SOURCE_DIR}/assets/*.inl"
 )
 
-target_sources(hyprie PRIVATE ${HYPRIE_SOURCES})
+target_sources(hyprie PRIVATE
+	${HYPRIE_SOURCES}
+	imports/tracy/TracyClient.cpp
+)
 
 target_include_directories(hyprie PRIVATE
 	"${CMAKE_SOURCE_DIR}"
+	"${CMAKE_SOURCE_DIR}/hpr/animation"
 	"${CMAKE_SOURCE_DIR}/hpr/core"
 	"${CMAKE_SOURCE_DIR}/hpr/editor"
 	"${CMAKE_SOURCE_DIR}/hpr/entity"
@@ -95,6 +99,7 @@ target_include_directories(hyprie PRIVATE
 	"${CMAKE_SOURCE_DIR}/imports/cgltf"
 	"${CMAKE_SOURCE_DIR}/imports/nuklear"
 	"${CMAKE_SOURCE_DIR}/imports/toml"
+	"${CMAKE_SOURCE_DIR}/imports/tracy"
 
 	"${SHADER_OUTPUT_DIR}"
 )
@@ -116,6 +121,7 @@ target_compile_options(hyprie PRIVATE
 	$<$<CONFIG:Debug>:-Wno-implicit-float-conversion>
 
 	$<$<CONFIG:Debug>:-fno-caret-diagnostics>
+	$<$<CONFIG:Debug>:-fno-omit-frame-pointer>
 	$<$<CONFIG:Debug>:-fmacro-backtrace-limit=1>
 	$<$<CONFIG:Debug>:-ferror-limit=1>
 
@@ -144,6 +150,7 @@ if(UNIX AND NOT APPLE)
 	target_compile_definitions(hyprie PRIVATE
 		SOKOL_GLCORE
 		SOKOL_NO_DEPRECATED
+		TRACY_ENABLE
 	)
 	target_link_libraries(hyprie PRIVATE
 		GL X11 Xcursor Xi pthread dl m

@@ -4,8 +4,6 @@ layout(location = 0) in vec3 pos_in;
 layout(location = 1) in vec4 nrm_in;
 layout(location = 2) in vec4 tan_in;
 layout(location = 3) in vec2 uv0_in;
-layout(location = 4) in vec2 uv1_in;
-layout(location = 5) in vec4 rgb_in;
 
 layout(set = 0, binding = 0) uniform u_cam_vs
 {
@@ -35,11 +33,9 @@ layout(location = 0) out vec3  pos_fs;
 layout(location = 1) out vec3  nrm_fs;
 layout(location = 2) out vec3  tan_fs;
 layout(location = 3) out vec2  uv0_fs;
-layout(location = 4) out vec2  uv1_fs;
-layout(location = 5) out vec4  rgb_fs;
-layout(location = 6) out float sgn_fs;
+layout(location = 4) out float sgn_fs;
 
-layout(location = 7) flat out uint mat_idx_fs;
+layout(location = 5) flat out uint mat_idx_fs;
 
 void main()
 {
@@ -58,8 +54,6 @@ void main()
 
 	tan_fs = normalize(tan_world - nrm_fs * dot(nrm_fs, tan_world));
 	uv0_fs = uv0_in;
-	uv1_fs = uv1_in;
-	rgb_fs = rgb_in;
 	sgn_fs = tan_in.w;
 }
 @end
@@ -71,11 +65,9 @@ layout(location = 0) in vec3  pos_fs;
 layout(location = 1) in vec3  nrm_fs;
 layout(location = 2) in vec3  tan_fs;
 layout(location = 3) in vec2  uv0_fs;
-layout(location = 4) in vec2  uv1_fs;
-layout(location = 5) in vec4  rgb_fs;
-layout(location = 6) in float sgn_fs;
+layout(location = 4) in float sgn_fs;
 
-layout(location = 7) flat in uint mat_idx_fs;
+layout(location = 5) flat in uint mat_idx_fs;
 
 layout(set = 0, binding = 2) uniform u_cam_fs
 {
@@ -97,7 +89,12 @@ layout(set = 1, binding = 9)  uniform texture2DArray u_tex_arr_128_unrm;
 layout(set = 1, binding = 10) uniform texture2DArray u_tex_arr_64_srgb;
 layout(set = 1, binding = 11) uniform texture2DArray u_tex_arr_64_unrm;
 
+layout(set = 1, binding = 14) uniform textureCube    u_irradiance_cube;
+layout(set = 1, binding = 15) uniform textureCube    u_prefilter_cube;
+layout(set = 1, binding = 16) uniform texture2D      u_brdf_lut;
+
 layout(set = 1, binding = 0) uniform sampler u_smp_linrep;
+layout(set = 1, binding = 1) uniform sampler u_smp_linclamp;
 
 struct MaterialInst
 {
@@ -135,17 +132,12 @@ layout(location = 0) out vec4 frag_color;
 const float EPSILON = 1e-6;
 const float PI = 3.14159265;
 
-vec2 select_uv(int uv_set, vec4 uv_transform)
-{
-	vec2 base_uv = (uv_set == 1) ? uv1_fs : uv0_fs;
-	return base_uv * uv_transform.xy + uv_transform.zw;
-}
 
 vec4 fetch_texture(uvec4 tex_info, vec4 uv_transform)
 {
 	int array_idx = int(tex_info.x);
 	float slice   = float(tex_info.y);
-	vec2 uv       = select_uv(int(tex_info.z), uv_transform);
+	vec2 uv       = uv0_fs * uv_transform.xy + uv_transform.zw;
 	vec3 coord    = vec3(uv, slice);
 
 	switch (array_idx) {
@@ -311,10 +303,22 @@ void main()
 		direct_lighting_sum += (diffuse_weight * albedo / PI + specular) * irradiance;
 	}
 
-	vec3 ambient_diffuse  = ambient_rgb * albedo * (1.0 - metallic);
-	vec3 ambient_specular = ambient_rgb * base_reflectance;
+	/* ambient ibl */
 
-	vec3 color_out = (ambient_diffuse + ambient_specular) * ambient_occlusion + direct_lighting_sum + emissive;
+	vec3 view_normal = normalize(shaded_normal_world);
+	vec3 reflection_vector = reflect(-view_direction, view_normal);
+
+	vec3 irradiance_sample = texture(samplerCube(u_irradiance_cube, u_smp_linclamp), view_normal).rgb;
+	vec3 diffuse_ibl = irradiance_sample * albedo * (1.0 - metallic);
+
+	const float max_reflection_lod = 4.0;
+	vec3 prefiltered_color = textureLod(samplerCube(u_prefilter_cube, u_smp_linclamp), reflection_vector, roughness * max_reflection_lod).rgb;
+	
+	vec2 brdf_sample = texture(sampler2D(u_brdf_lut, u_smp_linclamp), vec2(max(dot(view_normal, view_direction), 0.0), roughness)).rg;
+	vec3 specular_ibl = prefiltered_color * (base_reflectance * brdf_sample.x + brdf_sample.y);
+
+	vec3 ambient_lighting = (diffuse_ibl + specular_ibl) * ambient_occlusion;
+	vec3 color_out = ambient_lighting + direct_lighting_sum + emissive;
 
 	frag_color = vec4(color_out, alpha);
 }

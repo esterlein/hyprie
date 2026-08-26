@@ -14,6 +14,8 @@
 #include "stage_layer.hpp"
 #include "debug_layer.hpp"
 
+#include "tracy/Tracy.hpp"
+
 #include <memory>
 
 
@@ -51,11 +53,6 @@ Engine::Engine()
 	m_input_backend.input_state = &m_input_state;
 	m_ui_backend.rebuild_default_font(rdr::query_surface_info().dpi);
 	m_font_mason.install_debug_fonts();
-
-	m_renderer.set_render_context(
-		m_render_forge.binding_context(),
-		m_render_forge.staging_context()
-	);
 }
 
 
@@ -63,29 +60,41 @@ void Engine::init()
 {
 	rdr::SurfaceInfo surface_info = rdr::query_surface_info();
 
+	auto canonical_shapes =
+		geo::create_canonical_shapes(m_render_forge, m_render_hub);
+
 	scn::Scene scene = m_scene_builder.build("scene://dragons.toml");
+
+	m_render_forge.gpu_sync();
+
+	m_renderer.set_render_context(
+		m_render_forge.binding_context(),
+		m_render_forge.staging_context(),
+		canonical_shapes
+	);
 
 	m_layer_stack.init();
 
-	m_layer_stack.push_layer(std::make_unique<SceneLayer>(
+	m_layer_stack.push_layer(std::make_unique<lyr::SceneLayer>(
 		std::move(scene),
 		m_ecs_registry,
 		m_scn_metapool,
 		surface_info,
 		m_render_forge.staging_context(),
+		canonical_shapes,
 		m_renderer.scene_queue(),
+		m_renderer.anim_queue(),
 		m_renderer.cue_queue(),
 		m_renderer.overlay_queue(),
 		m_stats_harvester
 	));
 
-	m_layer_stack.push_overlay(std::make_unique<FxLayer>(
+	m_layer_stack.push_overlay(std::make_unique<lyr::FxLayer>(
 		edt::GridParams {
 			.minor_rgb          = vec3(0.5f, 0.5f, 0.5f),
 			.major_rgb          = vec3(1.0f, 1.0f, 1.0f),
 			.minor_vis_range_px = vec2(2.0f, 8.0f),
 			.major_vis_range_px = vec2(4.0f, 16.0f),
-			
 			.line_width_px      = 1.0f,
 			.cell_size          = 1.0f,
 			.y_plane            = 0.0f,
@@ -94,8 +103,8 @@ void Engine::init()
 		m_renderer.fx_queue()
 	));
 
-	m_layer_stack.push_overlay(std::make_unique<StageLayer>(
-		geo::create_canonical_primitives(m_render_forge, m_render_hub),
+	m_layer_stack.push_overlay(std::make_unique<lyr::StageLayer>(
+		canonical_shapes,
 		m_ecs_registry,
 		surface_info,
 		m_render_forge.staging_context(),
@@ -103,14 +112,14 @@ void Engine::init()
 		m_renderer.overlay_queue()
 	));
 
-	m_layer_stack.push_overlay(std::make_unique<GizmoLayer>(
+	m_layer_stack.push_overlay(std::make_unique<lyr::GizmoLayer>(
 		edt::create_gizmo_primitives(m_render_forge, m_render_hub),
 		surface_info,
 		m_render_forge.staging_context(),
 		m_renderer.overlay_queue()
 	));
 
-	m_layer_stack.push_overlay(std::make_unique<EditLayer>(
+	m_layer_stack.push_overlay(std::make_unique<lyr::EditLayer>(
 		m_input_state,
 		m_ui_backend,
 		surface_info,
@@ -118,9 +127,9 @@ void Engine::init()
 		m_renderer.ui_queue()
 	));
 
-	m_layer_stack.push_overlay(std::make_unique<DebugLayer>(
+	m_layer_stack.push_overlay(std::make_unique<lyr::DebugLayer>(
 		m_font_mason.debug_fonts(),
-		FontResolver {
+		lyr::FontResolver {
 			m_render_hub.storage<rdr::Font>()
 		},
 		surface_info,
@@ -135,13 +144,15 @@ void Engine::init()
 
 void Engine::frame(float delta_time)
 {
+	ZoneScoped;
+
 	m_stats_harvester.begin_frame();
 
 	m_actions.clear();
 	m_input_mapper.map(m_input_state, m_actions);
 	m_input_state.clear_mouse_delta();
 
-	const std::span<const Action> actions_span {m_actions.data(), m_actions.size()};
+	const std::span<const io::Action> actions_span {m_actions.data(), m_actions.size()};
 	m_layer_stack.on_actions(actions_span);
 	m_layer_stack.on_update(m_renderer, delta_time);
 	m_layer_stack.on_submit();
@@ -149,6 +160,8 @@ void Engine::frame(float delta_time)
 	m_renderer.frame();
 
 	m_input_state.clear_ui_frame();
+
+	FrameMark;
 }
 
 

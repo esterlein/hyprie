@@ -1,23 +1,22 @@
 #include "debug_layer.hpp"
 
 #include "log.hpp"
-#include "action.hpp"
 
+#include "stats.hpp"
 #include "font_data.hpp"
 #include "scene_context.hpp"
-#include "stats.hpp"
 
 #include <cstdio>
 
 
-namespace hpr {
+namespace hpr::lyr {
 
 
 namespace cfg {
 
 float delta_peak_window_sec = 5.0f;
 
-} // hpr::cfg
+} // hpr::lyr::cfg
 
 
 DebugLayer::DebugLayer(
@@ -66,23 +65,23 @@ bool DebugLayer::on_event(Event& event)
 }
 
 
-bool DebugLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const Action> actions)
+bool DebugLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const io::Action> actions)
 {
 	(void) scene_ctx;
 
 	bool action_consumed = false;
 
-	for (const Action& action : actions) {
+	for (const io::Action& action : actions) {
 		switch (action.kind) {
 
-		case ActionKind::DebugToggleOverlay:
+		case io::ActionKind::DebugToggleOverlay:
 			m_visible = !m_visible;
 			action_consumed = true;
 			break;
 
 		/* log level */
 
-		case ActionKind::DebugCycleLogLevel:
+		case io::ActionKind::DebugCycleLogLevel:
 			switch (m_min_level) {
 			case log::LogLevel::error:
 				m_min_level = log::LogLevel::warn;
@@ -109,36 +108,36 @@ bool DebugLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const 
 
 		/* log category toggle */
 
-		case ActionKind::DebugToggleCore:
+		case io::ActionKind::DebugToggleCore:
 			m_category_mask ^= (1U << 0);
 			action_consumed = true;
 			break;
 
-		case ActionKind::DebugToggleRender:
+		case io::ActionKind::DebugToggleRender:
 			m_category_mask ^= (1U << 1);
 			action_consumed = true;
 			break;
 
-		case ActionKind::DebugToggleScene:
+		case io::ActionKind::DebugToggleScene:
 			m_category_mask ^= (1U << 2);
 			action_consumed = true;
 			break;
 
-		case ActionKind::DebugToggleAsset:
+		case io::ActionKind::DebugToggleAsset:
 			m_category_mask ^= (1U << 3);
 			action_consumed = true;
 			break;
 
 		/* log scroll */
 
-		case ActionKind::DebugScrollUp:
+		case io::ActionKind::DebugScrollUp:
 			m_log_offset = std::min(
 				m_log_offset + 1,
 				log::cfg::log_ring_capacity - 1
 			);
 			break;
 
-		case ActionKind::DebugScrollDown:
+		case io::ActionKind::DebugScrollDown:
 			m_log_offset = (m_log_offset >= 1)
 				? m_log_offset - 1
 				: 0;
@@ -243,14 +242,14 @@ void DebugLayer::on_submit(const scn::SceneContext& scene_ctx, uint32_t layer_id
 		push_field("", "");
 
 		push_field("DRAWS", "%u",   frame_stats.total.draw_calls);
-		push_field("TRIGS", "%llu", static_cast<unsigned long long>(frame_stats.total.triangles));
+		push_field("TRIS",  "%llu", static_cast<unsigned long long>(frame_stats.total.triangles));
 		push_field("IDXS",  "%llu", static_cast<unsigned long long>(frame_stats.total.indices));
-		push_field("PRIMS", "%u",   frame_stats.total.submeshes);
+		push_field("SBMS",  "%u",   frame_stats.total.submeshes);
 
 		push_field("HIZ  MS", "%.3f", scn_stats.hiz_raster_ms);
 		push_field("CULL MS", "%.3f", scn_stats.cull_job_ms);
-		push_field("RAY  MS", "%.3f", scn_stats.ray_job_ms);
-		push_field("", "");
+		push_field("TLAS MS", "%.3f", scn_stats.tlas_ms);
+		push_field("RAY  MS", "%.3f", scn_stats.raycast_ms);
 
 		push_field("FRS TEST", "%u", scn_stats.frust_tested);
 		push_field("FRS CULL", "%u", scn_stats.frust_culled);
@@ -284,8 +283,16 @@ void DebugLayer::on_submit(const scn::SceneContext& scene_ctx, uint32_t layer_id
 
 				const float t = (num_cols > 1) ? static_cast<float>(col) / (num_cols - 1) : 0.5f;
 
-				const int slot_center_x = m_hud_layout.top.x + edge_margin + static_cast<int>(t * usable_width);
-				const int slot_y        = start_y + row * m_hud_layout.cell_h;
+				const int slot_center_x =
+					m_hud_layout.top.x +
+					edge_margin        +
+					static_cast<int>(t * usable_width);
+
+				const int slot_y =
+					start_y             +
+					row                 *
+					m_hud_layout.cell_h +
+					m_hud_layout.cell_h;
 
 				auto& label_line  = submission.lines.emplace_back();
 				label_line.color  = m_hud_style.packed_color_fps;
@@ -320,6 +327,7 @@ void DebugLayer::on_submit(const scn::SceneContext& scene_ctx, uint32_t layer_id
 		const int cell_x = m_hud_layout.log.x;
 		int cell_y =
 			m_hud_layout.log.y              +
+			m_hud_layout.cell_h             +
 			(m_hud_layout.log_rows_max - 1) *
 			m_hud_layout.cell_h;
 
@@ -428,5 +436,5 @@ void DebugLayer::rebuild_layout()
 }
 
 
-} // hpr
+} // hpr::lyr
 

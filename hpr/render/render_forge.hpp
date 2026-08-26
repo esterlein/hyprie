@@ -12,15 +12,16 @@
 #include "render_cache.hpp"
 #include "texture_data.hpp"
 #include "texture_mass.hpp"
+#include "environment_mass.hpp"
 #include "tile_mass.hpp"
 #include "font_mass.hpp"
 #include "palette_mass.hpp"
 #include "vertex_mass.hpp"
 #include "storage_mass.hpp"
 
-#include "scene.hpp"
 #include "fx_data.hpp"
 #include "font_data.hpp"
+#include "scene_rig.hpp"
 #include "scene_data.hpp"
 #include "editor_data.hpp"
 #include "pixel_format.hpp"
@@ -65,13 +66,6 @@ public:
 
 	Model create_model(const res::ImportModel& import_model);
 
-	void emit_primitives(
-		ecs::Entity             entity,
-		const res::ImportModel& import_model,
-		const Model&            model,
-		scn::SceneRenderRig&    render_rig
-	);
-
 	Handle<Font> create_bitmap_font(
 		const FontSpec&            spec,
 		Handle<res::ImageResource> atlas_image,
@@ -83,6 +77,12 @@ public:
 		uint32_t    width,
 		uint32_t    height,
 		PixelFormat pix_format
+	);
+
+	Handle<Environment> create_environment(
+		const void* pixel_data,
+		uint32_t    width,
+		uint32_t    height
 	);
 
 	Handle<Texture> create_tilemap(
@@ -115,29 +115,72 @@ public:
 		m_vtx_ssbo_mass.sync();
 		m_idx_ssbo_mass.sync();
 
-		m_scene_trs_mass.sync();
+		m_scene_blob_mass.sync();
 		m_mat_inst_mass.sync();
 	}
 
 private:
 
-	void init_pipeline_scene();
+	void init_pipeline_scene_static();
+	void init_pipeline_scene_skinned();
+
+	void init_pipeline_bitmap();
+	void init_pipeline_grid();
+
 	void init_pipeline_cue_solid();
 	void init_pipeline_cue_wire();
-	void init_pipeline_bitmap();
 	void init_pipeline_overlay_solid();
 	void init_pipeline_overlay_wire();
-	void init_pipeline_grid();
+
 	void init_pipeline_mask();
 	void init_pipeline_dilate();
 	void init_pipeline_blend();
 
+	void init_pipeline_skybox();
+
+	void init_pipeline_ibl_equirect();
+	void init_pipeline_ibl_irradiance();
+	void init_pipeline_ibl_prefilter();
+	void init_pipeline_ibl_brdf();
+
 	void create_samplers();
 	void create_targets();
 
-	template<typename Vertex>
+private:
+
+	template <typename Vertex>
+	auto& get_vertex_mass()
+	{
+		if constexpr (std::is_same_v<Vertex, SceneVertex>) {
+			return m_scene_mass;
+		}
+		else if constexpr (std::is_same_v<Vertex, AnimVertex>) {
+			return m_anim_mass;
+		}
+		else if constexpr (std::is_same_v<Vertex, GenericVertex>) {
+			return m_generic_mass;
+		}
+		else if constexpr (std::is_same_v<Vertex, BitmapVertex>) {
+			return m_bitmap_mass;
+		}
+	}
+
+	template <typename T>
+	auto& get_storage_mass()
+	{
+		if constexpr (std::is_same_v<T, GenericVertex>) {
+			return m_vtx_ssbo_mass;
+		} else if constexpr (std::is_same_v<T, uint32_t>) {
+			return m_idx_ssbo_mass;
+		}
+	}
+
+private:
+
+	template<MassDomain Domain = MassDomain::assembler, typename Vertex>
 	requires (
 		std::is_same_v<Vertex, SceneVertex>   ||
+		std::is_same_v<Vertex, AnimVertex>    ||
 		std::is_same_v<Vertex, GenericVertex> ||
 		std::is_same_v<Vertex, BitmapVertex>
 	)
@@ -147,25 +190,46 @@ private:
 		const mtp::vault<res::ImportSubmesh, mtp::default_set>& submeshes
 	)
 	{
-		auto& mass = get_vertex_mass<Vertex>();
-
-		auto alloc = mass.push(
-			vertices.data(), static_cast<uint32_t>(vertices.size()),
-			indices.data(),  static_cast<uint32_t>(indices.size())
-		);
-
 		Mesh mesh {};
-		mesh.vtx_base  = alloc.vtx_base;
-		mesh.idx_first = alloc.idx_first;
 		mesh.vtx_count = static_cast<uint32_t>(vertices.size());
 		mesh.idx_count = static_cast<uint32_t>(indices.size());
 
-		for (const auto& submesh : submeshes) {
-			mesh.submeshes.push_back({
-				.idx_first = submesh.idx_first + alloc.idx_first,
-				.idx_count = submesh.idx_count,
-				.vtx_base  = submesh.vtx_base  + alloc.vtx_base
-			});
+		if constexpr (Domain == MassDomain::assembler) {
+			auto& mass = get_vertex_mass<Vertex>();
+
+			auto alloc = mass.push(
+				vertices.data(), static_cast<uint32_t>(vertices.size()),
+				indices.data(),  static_cast<uint32_t>(indices.size())
+			);
+
+			mesh.vtx_base  = alloc.vtx_base;
+			mesh.idx_first = alloc.idx_first;
+
+			for (const auto& submesh : submeshes) {
+				mesh.submeshes.push_back({
+					.idx_first = submesh.idx_first + alloc.idx_first,
+					.idx_count = submesh.idx_count,
+					.vtx_base  = submesh.vtx_base  + alloc.vtx_base
+				});
+			}
+		}
+		else if constexpr (Domain == MassDomain::storage) {
+			auto& vtx_mass = get_storage_mass<Vertex>();
+			auto& idx_mass = get_storage_mass<uint32_t>();
+
+			uint32_t vtx_base  = vtx_mass.stage(vertices);
+			uint32_t idx_first = idx_mass.stage(indices);
+
+			mesh.vtx_base  = vtx_base;
+			mesh.idx_first = idx_first;
+
+			for (const auto& submesh : submeshes) {
+				mesh.submeshes.push_back({
+					.vtx_base  = submesh.vtx_base  + vtx_base,
+					.idx_first = submesh.idx_first + idx_first,
+					.idx_count = submesh.idx_count
+				});
+			}
 		}
 
 		return m_hub.create<Mesh>(std::move(mesh));
@@ -173,67 +237,55 @@ private:
 
 public:
 
-	template<typename Vertex>
+	template<MassDomain Domain = MassDomain::assembler, typename Vertex>
+	requires (
+		std::is_same_v<Vertex, SceneVertex>   ||
+		std::is_same_v<Vertex, GenericVertex>
+	)
 	Handle<Mesh> create_procedural_mesh(
 		const mtp::vault<vec3,     mtp::default_set>& positions,
 		const mtp::vault<uint32_t, mtp::default_set>& indices,
 		const mtp::vault<vec2,     mtp::default_set>& uvs,
-		std::span<const geo::Geoslice>           submesh_ranges
+		std::span<const geo::Geoslice>                submesh_ranges
 	)
 	{
 		const uint32_t vtx_count = static_cast<uint32_t>(positions.size());
 
-		if constexpr (std::is_same_v<Vertex, SceneVertex>) {
-			mtp::vault<SceneVertex, mtp::default_set> packed_vertices;
-			packed_vertices.resize(vtx_count);
+		mtp::vault<Vertex, mtp::default_set> packed_vertices;
+		packed_vertices.resize(vtx_count);
 
+		if constexpr (std::is_same_v<Vertex, SceneVertex>) {
 			for (uint32_t i = 0; i < vtx_count; ++i) {
 				SceneVertex& vtx = packed_vertices[i];
 				vtx.pos = {positions[i].x, positions[i].y, positions[i].z};
 				vtx.nrm = pack_1010102(vec4(0.0f, 1.0f, 0.0f, 1.0f));
 				vtx.tan = pack_1010102(vec4(1.0f, 0.0f, 0.0f, 1.0f));
 				vtx.uv0 = {0, 0};
-				vtx.uv1 = {0, 0};
-				vtx.rgb = 0xFFFFFFFF;
 			}
-
-			mtp::vault<res::ImportSubmesh, mtp::default_set> import_submeshes;
-			for (const auto& range : submesh_ranges) {
-				import_submeshes.push_back(res::ImportSubmesh {
-					.vtx_base  = range.vtx_base,
-					.idx_first = range.idx_first,
-					.idx_count = range.idx_count,
-					.model_mat_idx = 0
-				});
-			}
-
-			return create_mesh<Vertex>(packed_vertices, indices, import_submeshes);
 		}
 		else if constexpr (std::is_same_v<Vertex, GenericVertex>) {
-			mtp::vault<GenericVertex, mtp::default_set> packed_vertices;
-			packed_vertices.resize(vtx_count);
-
 			for (uint32_t i = 0; i < vtx_count; ++i) {
 				GenericVertex& vtx = packed_vertices[i];
 				vtx.pos = {positions[i].x, positions[i].y, positions[i].z};
-			
 				vtx.uv.u = static_cast<uint16_t>(uvs[i].x * 65535.0f);
 				vtx.uv.v = static_cast<uint16_t>(uvs[i].y * 65535.0f);
 			}
-
-			mtp::vault<res::ImportSubmesh, mtp::default_set> import_submeshes;
-			for (const auto& range : submesh_ranges) {
-				import_submeshes.push_back(res::ImportSubmesh {
-					.vtx_base  = range.vtx_base,
-					.idx_first = range.idx_first,
-					.idx_count = range.idx_count,
-					.model_mat_idx = 0
-				});
-			}
-
-			return create_mesh<Vertex>(packed_vertices, indices, import_submeshes);
 		}
+
+		mtp::vault<res::ImportSubmesh, mtp::default_set> import_submeshes;
+		for (const auto& range : submesh_ranges) {
+			import_submeshes.push_back(res::ImportSubmesh {
+				.vtx_base      = range.vtx_base,
+				.idx_first     = range.idx_first,
+				.idx_count     = range.idx_count,
+				.model_mat_idx = 0xFFFFFFFFU,
+				.hull_idx      = 0xFFFFFFFFU
+			});
+		}
+
+		return create_mesh<Domain, Vertex>(packed_vertices, indices, import_submeshes);
 	}
+
 
 	template<MassDomain Domain = MassDomain::assembler, typename Vertex, typename Index>
 	requires (
@@ -283,28 +335,6 @@ private:
 		Handle<MaterialTemplate>      material_template
 	);
 
-	template <typename Vertex>
-	auto& get_vertex_mass()
-	{
-		if constexpr (std::is_same_v<Vertex, SceneVertex>) {
-			return m_scene_mass;
-		} else if constexpr (std::is_same_v<Vertex, GenericVertex>) {
-			return m_generic_mass;
-		} else if constexpr (std::is_same_v<Vertex, BitmapVertex>) {
-			return m_bitmap_mass;
-		}
-	}
-
-	template <typename T>
-	auto& get_storage_mass()
-	{
-		if constexpr (std::is_same_v<T, GenericVertex>) {
-			return m_vtx_ssbo_mass;
-		} else if constexpr (std::is_same_v<T, uint32_t>) {
-			return m_idx_ssbo_mass;
-		}
-	}
-
 private:
 
 	RenderHub&  m_hub;
@@ -316,10 +346,12 @@ private:
 	Handle<MaterialTemplate> m_default_material_template;
 	Handle<MaterialInstance> m_default_material_instance;
 
-	TextureMass m_texture_mass;
-	PaletteMass m_palette_mass;
-	TileMass    m_tilemap_mass {cfg::num_tex_arrays};
-	FontMass    m_font_mass    {cfg::num_tex_arrays};
+	TextureMass     m_texture_mass;
+	PaletteMass     m_palette_mass;
+	EnvironmentMass m_environment_mass;
+
+	TileMass m_tilemap_mass {cfg::num_tex_arrays};
+	FontMass m_font_mass    {cfg::num_tex_arrays};
 
 	SamplerBind      m_sampler_bind;
 	PipelineSet      m_pipelines;
@@ -327,15 +359,20 @@ private:
 	NuklearAtlasBind m_nk_atlas;
 
 	VertexMass<SceneVertex,   uint32_t> m_scene_mass;
+	VertexMass<AnimVertex ,   uint32_t> m_anim_mass;
 	VertexMass<GenericVertex, uint32_t> m_generic_mass;
 	VertexMass<BitmapVertex,  uint16_t> m_bitmap_mass;
 
-	StorageMass<SceneBlob>     m_scene_trs_mass;
-	StorageMass<CueBlob>       m_cue_trs_mass;
+	StorageMass<SceneBlob>     m_scene_blob_mass;
+	StorageMass<AnimBlob>      m_anim_blob_mass;
+	StorageMass<BoneBlob>      m_bone_blob_mass;
+	StorageMass<CueBlob>       m_cue_blob_mass;
+	StorageMass<OverlayBlob>   m_overlay_blob_mass;
+
+	StorageMass<MaterialBlob>  m_mat_inst_mass;
+
 	StorageMass<GenericVertex> m_vtx_ssbo_mass;
 	StorageMass<uint32_t>      m_idx_ssbo_mass;
-	StorageMass<OverlayBlob>   m_overlay_trs_mass;
-	StorageMass<MaterialBlob>  m_mat_inst_mass;
 };
 
 } // hpr::rdr

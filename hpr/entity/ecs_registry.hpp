@@ -56,13 +56,6 @@ public:
 	}
 
 
-	Handle<Entity> create_handle()
-	{
-		Entity index = create_entity();
-		return { index, m_generation[index] };
-	}
-
-
 	void destroy_entity(Entity entity)
 	{
 		if (entity >= m_generation.size())
@@ -84,14 +77,6 @@ public:
 	}
 
 
-	void destroy_entity(Handle<Entity> handle)
-	{
-		if (!is_valid(handle))
-			return;
-		destroy_entity(handle.index);
-	}
-
-
 	template <typename T>
 	bool has(Entity entity) const
 	{
@@ -101,16 +86,6 @@ public:
 			return false;
 
 		return rack.sparse_index[entity] != cfg::invalid_slot;
-	}
-
-
-	template <typename T>
-	bool has(Handle<Entity> handle) const
-	{
-		if (!is_valid(handle))
-			return false;
-
-		return has<T>(handle.index);
 	}
 
 
@@ -133,15 +108,6 @@ public:
 
 		rack.dense_values[slot] = T(std::forward<Types>(args)...);
 		return rack.dense_values[slot];
-	}
-
-
-	template <typename T, typename... Types>
-	T& add(Handle<Entity> handle, Types&&... args)
-	{
-		if (!is_valid(handle))
-			return add<T>(create_entity(), std::forward<Types>(args)...);
-		return add<T>(handle.index, std::forward<Types>(args)...);
 	}
 
 
@@ -172,16 +138,6 @@ public:
 
 
 	template <typename T>
-	void remove(Handle<Entity> handle)
-	{
-		if (!is_valid(handle))
-			return;
-
-		remove<T>(handle.index);
-	}
-
-
-	template <typename T>
 	T* get(Entity entity)
 	{
 		auto& rack = get_rack<T>();
@@ -198,15 +154,6 @@ public:
 
 
 	template <typename T>
-	T* get(Handle<Entity> handle)
-	{
-		if (!is_valid(handle))
-			return nullptr;
-		return get<T>(handle.index);
-	}
-
-
-	template <typename T>
 	const T* get(Entity entity) const
 	{
 		const auto& rack = get_rack_const<T>();
@@ -219,16 +166,6 @@ public:
 			return nullptr;
 
 		return &rack.dense_values[slot];
-	}
-
-
-	template <typename T>
-	const T* get(Handle<Entity> handle) const
-	{
-		if (!is_valid(handle))
-			return nullptr;
-
-		return get<T>(handle.index);
 	}
 
 
@@ -317,16 +254,6 @@ public:
 	}
 
 
-	bool is_valid(Handle<Entity> handle) const
-	{
-		if (handle.index >= m_generation.size())
-			return false;
-		if (m_generation[handle.index] != handle.magic)
-			return false;
-		return m_alive[handle.index] != 0U;
-	}
-
-
 	void clear()
 	{
 		for_each_rack([](auto& store) {
@@ -352,14 +279,15 @@ private:
 	template <typename T>
 	struct Rack
 	{
-		mtp::vault<Entity, mtp::default_set>        dense_entities;
-		mtp::vault<T, mtp::default_set>             dense_values;
+		mtp::vault<Entity,        mtp::default_set> dense_entities;
+		mtp::vault<T,             mtp::default_set> dense_values;
 		mtp::vault<std::uint32_t, mtp::default_set> sparse_index;
 
 		void ensure_sparse_capacity(std::size_t cap)
 		{
-			if (cap > sparse_index.size())
+			if (cap > sparse_index.size()) {
 				sparse_index.resize(cap, cfg::invalid_slot);
+			}
 		}
 
 		void erase_entity(Entity entity)

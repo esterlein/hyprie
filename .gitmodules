@@ -1,7 +1,7 @@
 [submodule "imports/metapool"]
 	path = imports/metapool
-	url = git@github.com:esterlein/metapool.git
-	branch = master
+	url = git@github.com:esterlein/metapool-dev.git
+	branch = dev
 [submodule "imports/sokol"]
 	path = imports/sokol
 	url = git@github.com:floooh/sokol.git

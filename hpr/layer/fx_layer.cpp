@@ -9,7 +9,7 @@
 #include "scene_context.hpp"
 
 
-namespace hpr {
+namespace hpr::lyr {
 
 
 FxLayer::FxLayer(
@@ -43,9 +43,22 @@ bool FxLayer::on_event(Event& event)
 	return false;
 }
 
-bool FxLayer::on_actions(const scn::SceneContext& scn_ctx, std::span<const Action> actions)
+bool FxLayer::on_actions(const scn::SceneContext& scn_ctx, std::span<const io::Action> actions)
 {
-	return false;
+	bool action_consumed = false;
+
+	for (const io::Action& action : actions) {
+		switch (action.kind) {
+		case io::ActionKind::ToggleGrid:
+		{
+			m_show_grid = !m_show_grid;
+			break;
+		}
+		default: break;
+		}
+	}
+
+	return action_consumed;
 }
 
 void FxLayer::on_update(scn::SceneContext& scn_ctx, float delta_time)
@@ -74,10 +87,5 @@ void FxLayer::on_submit(const scn::SceneContext& scn_ctx, uint32_t layer_idx)
 }
 
 
-void FxLayer::set_grid_enabled(bool enabled)
-{
-	m_show_grid = enabled;
-}
-
-} // hpr
+} // hpr::lyr
 

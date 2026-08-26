@@ -28,10 +28,14 @@
 
 namespace hpr {
 
-
 struct Event;
 class  EventQueue;
 struct CmdStream;
+
+} // hpr
+
+
+namespace hpr::lyr {
 
 
 class StageLayer final : public Layer, public EventEmitter, public CommandEmitter
@@ -48,7 +52,7 @@ private:
 public:
 
 	StageLayer(
-		geo::CanonicalPrimitives               canonical,
+		geo::CanonicalShapes                   canonical,
 		MainRegistry&                          registry,
 		rdr::SurfaceInfo                       surface_info,
 		rdr::StagingContext                    staging_ctx,
@@ -61,7 +65,7 @@ public:
 
 	bool on_event(Event& event) override;
 
-	bool on_actions(const scn::SceneContext& scn_ctx, std::span<const Action> actions) override;
+	bool on_actions(const scn::SceneContext& scn_ctx, std::span<const io::Action> actions) override;
 	void on_update(scn::SceneContext& scn_ctx, float delta_time) override;
 	void on_submit(const scn::SceneContext& scn_ctx, uint32_t layer_idx) override;
 
@@ -79,7 +83,7 @@ public:
 
 private:
 
-	geo::CanonicalPrimitives m_canonical {};
+	geo::CanonicalShapes m_canonical {};
 
 	MainRegistry&       m_registry;
 	rdr::SurfaceInfo    m_surface_info;
@@ -96,5 +100,5 @@ private:
 	rdr::RenderQueue<rdr::OverlayDrawCmd>& m_overlay_queue;
 };
 
-} // hpr
+} // hpr::lyr
 

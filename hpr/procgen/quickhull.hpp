@@ -79,7 +79,7 @@ inline Simplex init_simplex(const vec3* pos_raw, uint32_t vtx_count)
 
 	vec3 baseline = pos_raw[base_end_idx] - pos_raw[base_beg_idx];
 	float area_sq_max = -1.0f;
-	uint32_t trig_peak_idx = 0;
+	uint32_t tri_peak_idx = 0;
 
 	for (uint32_t idx = 0; idx < vtx_count; ++idx) {
 		vec3 rel_pos  = pos_raw[idx] - pos_raw[base_beg_idx];
@@ -87,8 +87,8 @@ inline Simplex init_simplex(const vec3* pos_raw, uint32_t vtx_count)
 		float area_sq = glm::dot(area, area); 
 
 		if (area_sq > area_sq_max) {
-			area_sq_max   = area_sq;
-			trig_peak_idx = idx;
+			area_sq_max  = area_sq;
+			tri_peak_idx = idx;
 		}
 	}
 
@@ -100,7 +100,7 @@ inline Simplex init_simplex(const vec3* pos_raw, uint32_t vtx_count)
 
 	vec3 pln_un_normal = glm::cross(
 		baseline,
-		pos_raw[trig_peak_idx] - pos_raw[base_beg_idx]
+		pos_raw[tri_peak_idx] - pos_raw[base_beg_idx]
 	);
 
 	float vol_abs_max = -1.0f;
@@ -126,7 +126,7 @@ inline Simplex init_simplex(const vec3* pos_raw, uint32_t vtx_count)
 
 	simplex.indices[0] = base_beg_idx;
 	simplex.indices[1] = base_end_idx;
-	simplex.indices[2] = trig_peak_idx;
+	simplex.indices[2] = tri_peak_idx;
 	simplex.indices[3] = tetrahd_peak_idx;
 
 	return simplex;

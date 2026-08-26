@@ -7,16 +7,21 @@
 #include "mtp_memory.hpp"
 
 
+namespace hpr::lyr {
+
+class LayerStack;
+
+} // hpr::lyr
+
+
 namespace hpr {
 
-
 struct Event;
-class LayerStack;
 
 
 class EventQueue
 {
-	friend class LayerStack;
+	friend class lyr::LayerStack;
 
 public:
 

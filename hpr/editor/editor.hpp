@@ -70,7 +70,7 @@ inline GizmoPrimitives create_gizmo_primitives(
 		.max = vec3( 0.5f)
 	});
 
-	auto mesh_hnd = forge.create_procedural_mesh<rdr::GenericVertex>(
+	auto mesh_hnd = forge.create_procedural_mesh<rdr::RenderForge::MassDomain::assembler, rdr::GenericVertex>(
 		meshgen.positions,
 		meshgen.indices,
 		meshgen.uvs,

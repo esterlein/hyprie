@@ -30,7 +30,8 @@ struct Pipeline
 
 struct PipelineSet
 {
-	Pipeline scene_pbr;
+	Pipeline scene_static;
+	Pipeline scene_skinned;
 	Pipeline cue;
 	Pipeline cue_wire;
 	Pipeline overlay;
@@ -40,6 +41,11 @@ struct PipelineSet
 	Pipeline outline_dilate;
 	Pipeline outline_blend;
 	Pipeline bitmap;
+	Pipeline skybox;
+	Pipeline ibl_equirect;
+	Pipeline ibl_irradiance;
+	Pipeline ibl_prefilter;
+	Pipeline ibl_brdf;
 };
 
 
@@ -95,6 +101,21 @@ struct TargetFramebuffs
 };
 
 
+struct EnvironmentBind
+{
+	sg_image equirect_src_img;
+	sg_image env_cube_img;
+	sg_image irr_cube_img;
+	sg_image pref_cube_img;
+	sg_image brdf_lut_img;
+
+	sg_view env_view;
+	sg_view irr_view;
+	sg_view pref_view;
+	sg_view brdf_view;
+};
+
+
 struct BindingContext
 {
 	TextureBind fonts;
@@ -105,15 +126,21 @@ struct BindingContext
 	SamplerBind samplers;
 
 	VertexBind scn_vtx;
+	VertexBind anm_vtx;
 	VertexBind gen_vtx;
 	VertexBind btm_vtx;
 
-	StorageBind scn_trs;
-	StorageBind cue_trs;
-	StorageBind vtx_ssbo;
-	StorageBind idx_ssbo;
-	StorageBind orl_trs;
-	StorageBind mat_inst;
+	StorageBind scn_blob_ssbo;
+	StorageBind anm_blob_ssbo;
+	StorageBind anm_bones_ssbo;
+	StorageBind cue_blob_ssbo;
+	StorageBind orl_blob_ssbo;
+	StorageBind mat_inst_ssbo;
+
+	StorageBind vtx_gen_ssbo;
+	StorageBind idx_gen_ssbo;
+
+	EnvironmentBind environment;
 
 	PipelineSet pipelines;
 
@@ -125,10 +152,12 @@ struct BindingContext
 
 struct StagingContext
 {
-	StorageMass<SceneBlob>*              scn_trs_mass  {nullptr};
-	StorageMass<CueBlob>*                cue_trs_mass  {nullptr};
-	StorageMass<OverlayBlob>*            orl_trs_mass  {nullptr};
-	StorageMass<MaterialBlob>*           mat_inst_mass {nullptr};
+	StorageMass<SceneBlob>*              scn_blob_mass {nullptr};
+	StorageMass<CueBlob>*                cue_blob_mass {nullptr};
+	StorageMass<OverlayBlob>*            orl_blob_mass {nullptr};
+	StorageMass<AnimBlob>*               anm_blob_mass {nullptr};
+
+	StorageMass<MaterialBlob>*           mat_blob_mass {nullptr};
 
 	VertexMass<SceneVertex,   uint32_t>* scn_vtx_mass  {nullptr};
 	VertexMass<GenericVertex, uint32_t>* gen_vtx_mass  {nullptr};

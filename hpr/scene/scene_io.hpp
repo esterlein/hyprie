@@ -81,8 +81,9 @@ inline bool load_scene(const char* scene_uri, SceneDoc& out_scene_doc)
 	{
 		vec3 ambient_values {0.0f, 0.0f, 0.0f};
 
-		bool is_read_ok = read_float_array_exact(root_table, "ambient_rgb", glm::value_ptr(ambient_values), vec3::length());
-		if (!is_read_ok && root_table.contains("ambient_rgb")) {
+		bool is_amb_ok =
+			read_float_array_exact(root_table, "ambient_rgb", glm::value_ptr(ambient_values), vec3::length());
+		if (!is_amb_ok && root_table.contains("ambient_rgb")) {
 			HPR_WARN(
 				log::LogCategory::scene,
 				"[scene_io][load_scene] ambient_rgb invalid [%s][expected %zu]",
@@ -92,6 +93,17 @@ inline bool load_scene(const char* scene_uri, SceneDoc& out_scene_doc)
 		}
 
 		out_scene_doc.ambient_rgb = ambient_values;
+	}
+
+	if (auto env_opt = root_table["environment"].value<std::string>()) {
+		out_scene_doc.environment = fs::Filesystem::instance().resolve_dir(scene_uri) + *env_opt;
+	}
+	else {
+		HPR_WARN(
+			log::LogCategory::scene,
+			"[scene_io][load_scene] missing scene environment [%s]",
+			scene_uri
+		);
 	}
 
 	if (auto entity_array = root_table["entity"].as_array()) {

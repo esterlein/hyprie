@@ -17,12 +17,18 @@
 #include "cue_wire.glsl.h"
 #include "grid.glsl.h"
 #include "scene.glsl.h"
+#include "scene_skinned.glsl.h"
 #include "bitmap.glsl.h"
 #include "overlay.glsl.h"
 #include "overlay_wire.glsl.h"
 #include "outline_mask.glsl.h"
 #include "outline_dilate.glsl.h"
 #include "outline_blend.glsl.h"
+#include "skybox.glsl.h"
+#include "ibl_equirect.glsl.h"
+#include "ibl_irradiance.glsl.h"
+#include "ibl_prefilter.glsl.h"
+#include "ibl_brdf.glsl.h"
 
 
 namespace hpr::rdr {
@@ -30,6 +36,7 @@ namespace hpr::rdr {
 
 log::PassStats ScenePass::execute(
 	RenderQueue<SceneDrawCmd>&  scene_queue,
+	RenderQueue<AnimDrawCmd>&   anim_queue,
 	RenderQueue<ReplayDrawCmd>& replay_queue,
 	const scn::SceneContext&    scene_ctx,
 	const BindingContext&       binding_ctx,
@@ -38,15 +45,21 @@ log::PassStats ScenePass::execute(
 {
 	log::PassStats pass_stats {};
 
-	replay_queue.clear();
+	/* sort and sync */
 
 	scene_queue.sort();
-	auto& commands = scene_queue.commands();
-	auto& trs_mass = staging_ctx.scn_trs_mass;
+	anim_queue.sort();
+	replay_queue.clear();
 
-	for (auto& cmd : commands) {
-		SceneBlob data = trs_mass->get_raw(cmd.trs_idx);
-		cmd.trs_idx    = trs_mass->push_staged(data);
+	auto& scene_commands  = scene_queue.commands();
+	auto& anim_commands   = anim_queue.commands();
+	auto& scene_blob_mass = staging_ctx.scn_blob_mass;
+	auto& anim_blob_mass  = staging_ctx.anm_blob_mass;
+
+	for (auto& cmd : scene_commands) {
+
+		SceneBlob blob = scene_blob_mass->get_raw(cmd.blob_idx);
+		cmd.blob_idx   = scene_blob_mass->push_staged(blob);
 
 		if (cmd.flags & static_cast<uint8_t>(SceneDrawCmdFlag::selected)) {
 			replay_queue.push(ReplayDrawCmd {
@@ -57,12 +70,20 @@ log::PassStats ScenePass::execute(
 				.vtx_base  = cmd.vtx_base,
 				.idx_first = cmd.idx_first,
 				.idx_count = cmd.idx_count,
-				.trs_idx   = cmd.trs_idx
+				.blob_idx  = cmd.blob_idx
 			});
         }
 	}
 
-	trs_mass->sync();
+	for (auto& cmd : anim_commands) {
+		AnimBlob blob = anim_blob_mass->get_raw(cmd.blob_idx);
+		cmd.blob_idx  = anim_blob_mass->push_staged(blob);
+	}
+
+	scene_blob_mass->sync();
+	anim_blob_mass->sync();
+
+	/* set common scene pass state */
 
 	sg_pass_action pass_action {};
 	pass_action.colors[0].load_action  = SG_LOADACTION_CLEAR;
@@ -78,13 +99,20 @@ log::PassStats ScenePass::execute(
 
 	sg_begin_pass(&pass);
 
-	sg_apply_pipeline(binding_ctx.pipelines.scene_pbr.pipeline);
+
+	/* static scene pipeline */
+
+	sg_apply_pipeline(binding_ctx.pipelines.scene_static.pipeline);
 
 	sg_bindings bindings = {
 		.vertex_buffers[0]           = binding_ctx.scn_vtx.vtx_buf,
 		.index_buffer                = binding_ctx.scn_vtx.idx_buf,
-		.views[VIEW_scene_ssbo_trs]  = binding_ctx.scn_trs.view,
-		.views[VIEW_scene_ssbo_mats] = binding_ctx.mat_inst.view
+		.views[VIEW_scene_ssbo_trs]  = binding_ctx.scn_blob_ssbo.view,
+		.views[VIEW_scene_ssbo_mats] = binding_ctx.mat_inst_ssbo.view,
+
+		.views[VIEW_scene_u_irradiance_cube] = binding_ctx.environment.irr_view,
+		.views[VIEW_scene_u_prefilter_cube]  = binding_ctx.environment.pref_view,
+		.views[VIEW_scene_u_brdf_lut]        = binding_ctx.environment.brdf_view
 	};
 
 	for (uint32_t i = 0; i < binding_ctx.texarrays.count; ++i) {
@@ -94,6 +122,9 @@ log::PassStats ScenePass::execute(
 
 	bindings.samplers[SMP_scene_u_smp_linrep] =
 		binding_ctx.samplers.types[static_cast<size_t>(SamplerType::linear_repeat)];
+
+	bindings.samplers[SMP_scene_u_smp_linclamp] =
+		binding_ctx.samplers.types[static_cast<size_t>(SamplerType::linear_clamp)];
 
 	sg_apply_bindings(&bindings);
 
@@ -178,13 +209,13 @@ log::PassStats ScenePass::execute(
 	sg_apply_uniforms(UB_scene_u_cam_fs, SG_RANGE(u_cam_fs));
 	sg_apply_uniforms(UB_scene_u_light,  SG_RANGE(u_light));
 
-	for (uint32_t cmd_idx = 0; cmd_idx < commands.size(); ) {
+	for (uint32_t cmd_idx = 0; cmd_idx < scene_commands.size(); ) {
 
-		const auto& cmd_start = commands[cmd_idx];
+		const auto& cmd_start = scene_commands[cmd_idx];
 		uint32_t instance_num = 1;
 
-		while (cmd_idx + instance_num < commands.size()) {
-			const auto& cmd_next = commands[cmd_idx + instance_num];
+		while (cmd_idx + instance_num < scene_commands.size()) {
+			const auto& cmd_next = scene_commands[cmd_idx + instance_num];
 
 			if (cmd_next.vtx_base  == cmd_start.vtx_base  &&
 				cmd_next.idx_first == cmd_start.idx_first &&
@@ -198,7 +229,7 @@ log::PassStats ScenePass::execute(
 		}
 
 		scene_u_inst_t inst {};
-		inst.base_inst_idx = static_cast<int>(cmd_start.trs_idx);
+		inst.base_inst_idx = static_cast<int>(cmd_start.blob_idx);
 
 		sg_apply_uniforms(UB_scene_u_inst, SG_RANGE(inst));
 
@@ -207,7 +238,7 @@ log::PassStats ScenePass::execute(
 			static_cast<int>(cmd_start.idx_count),
 			static_cast<int>(instance_num),
 			static_cast<int>(cmd_start.vtx_base),
-			static_cast<int>(cmd_start.trs_idx)
+			static_cast<int>(cmd_start.blob_idx)
 		);
 
 		pass_stats.draw_calls++;
@@ -218,6 +249,112 @@ log::PassStats ScenePass::execute(
 		cmd_idx += instance_num;
 	}
 
+
+	/* skinned scene pipeline */
+
+	sg_apply_pipeline(binding_ctx.pipelines.scene_skinned.pipeline);
+
+	sg_bindings anim_bindings = {
+		.vertex_buffers[0]                    = binding_ctx.anm_vtx.vtx_buf,
+		.index_buffer                         = binding_ctx.anm_vtx.idx_buf,
+		.views[VIEW_scene_skinned_ssbo_trs]   = binding_ctx.anm_blob_ssbo.view,
+		.views[VIEW_scene_skinned_ssbo_mats]  = binding_ctx.mat_inst_ssbo.view,
+		.views[VIEW_scene_skinned_ssbo_bones] = binding_ctx.anm_bones_ssbo.view
+	};
+
+	for (uint32_t i = 0; i < binding_ctx.texarrays.count; ++i) {
+		anim_bindings.views[VIEW_scene_u_tex_arr_2048_srgb + i] = binding_ctx.texarrays.views[i];
+	}
+
+	anim_bindings.samplers[SMP_scene_u_smp_linrep] =
+		binding_ctx.samplers.types[static_cast<size_t>(SamplerType::linear_repeat)];
+
+	sg_apply_bindings(&anim_bindings);
+
+	sg_apply_uniforms(UB_scene_u_cam_vs, SG_RANGE(u_cam_vs));
+	sg_apply_uniforms(UB_scene_u_cam_fs, SG_RANGE(u_cam_fs));
+	sg_apply_uniforms(UB_scene_u_light,  SG_RANGE(u_light));
+
+	for (uint32_t cmd_idx = 0; cmd_idx < anim_commands.size(); ) {
+
+		const auto& cmd_start = anim_commands[cmd_idx];
+		uint32_t instance_num = 1;
+
+		while (cmd_idx + instance_num < anim_commands.size()) {
+			const auto& cmd_next = anim_commands[cmd_idx + instance_num];
+
+			if (cmd_next.vtx_base  == cmd_start.vtx_base  &&
+				cmd_next.idx_first == cmd_start.idx_first &&
+				cmd_next.idx_count == cmd_start.idx_count) {
+				instance_num++;
+			}
+			else {
+				break;
+			}
+		}
+
+		scene_u_inst_t inst {};
+		inst.base_inst_idx = static_cast<int>(cmd_start.blob_idx);
+
+		sg_apply_uniforms(UB_scene_u_inst, SG_RANGE(inst));
+
+		sg_draw_ex(
+			static_cast<int>(cmd_start.idx_first),
+			static_cast<int>(cmd_start.idx_count),
+			static_cast<int>(instance_num),
+			static_cast<int>(cmd_start.vtx_base),
+			static_cast<int>(cmd_start.blob_idx)
+		);
+
+		pass_stats.draw_calls++;
+		pass_stats.submeshes += instance_num;
+		pass_stats.indices   += (static_cast<uint64_t>(cmd_start.idx_count) * instance_num);
+		pass_stats.triangles += (static_cast<uint64_t>(cmd_start.idx_count) * instance_num) / 3ULL;
+
+		cmd_idx += instance_num;
+	}
+
+	/* skybox pipeline */
+
+	sg_apply_pipeline(binding_ctx.pipelines.skybox.pipeline);
+
+	sg_bindings skybox_bindings {};
+	skybox_bindings.vertex_buffers[0]                 = binding_ctx.gen_vtx.vtx_buf;
+	skybox_bindings.index_buffer                      = binding_ctx.gen_vtx.idx_buf;
+	skybox_bindings.views[VIEW_skybox_u_skybox_cube]  = binding_ctx.environment.env_view;
+	skybox_bindings.samplers[SMP_skybox_u_smp_linear] = binding_ctx.samplers.types[static_cast<size_t>(SamplerType::linear_clamp)];
+
+	sg_apply_bindings(&skybox_bindings);
+
+	skybox_u_camera_t skybox_cam {};
+	glm::mat4 view_rot_only = glm::mat4(glm::mat3(scene_ctx.draw_view.mtx_V));
+	glm::mat4 vp_skybox = scene_ctx.draw_view.mtx_P * view_rot_only;
+	std::memcpy(skybox_cam.mtx_VP, glm::value_ptr(vp_skybox), sizeof(skybox_cam.mtx_VP));
+
+	sg_apply_uniforms(UB_skybox_u_camera, SG_RANGE(skybox_cam));
+
+	uint32_t box_idx_first =
+		m_canonical_shapes.geo_slice[static_cast<uint32_t>(geo::CanonicalSubmesh::Box)].idx_first;
+	uint32_t box_idx_count =
+		m_canonical_shapes.geo_slice[static_cast<uint32_t>(geo::CanonicalSubmesh::Box)].idx_count;
+	uint32_t box_vtx_base  =
+		m_canonical_shapes.geo_slice[static_cast<uint32_t>(geo::CanonicalSubmesh::Box)].vtx_base;
+
+	sg_draw_ex(
+		static_cast<int>(box_idx_first),
+		static_cast<int>(box_idx_count),
+		1,
+		0,
+		0
+	);
+
+	pass_stats.draw_calls++;
+	pass_stats.indices   += box_idx_count;
+	pass_stats.triangles += box_idx_count / 3ULL;
+
+	sg_end_pass();
+
+	return pass_stats;
 	sg_end_pass();
 
 	return pass_stats;
@@ -259,7 +396,7 @@ log::PassStats OutlinePass::execute(
 		sg_bindings bindings {};
 		bindings.vertex_buffers[0]                 = binding_ctx.scn_vtx.vtx_buf;
 		bindings.index_buffer                      = binding_ctx.scn_vtx.idx_buf;
-		bindings.views[VIEW_outline_mask_ssbo_trs] = binding_ctx.scn_trs.view;
+		bindings.views[VIEW_outline_mask_ssbo_trs] = binding_ctx.scn_blob_ssbo.view;
 
 		sg_apply_bindings(&bindings);
 
@@ -285,7 +422,7 @@ log::PassStats OutlinePass::execute(
 			const auto& cmd = commands[cmd_idx];
 
 			outline_mask_u_inst_t inst {};
-			inst.base_inst_idx = static_cast<int>(cmd.trs_idx);
+			inst.base_inst_idx = static_cast<int>(cmd.blob_idx);
 
 			sg_apply_uniforms(UB_outline_mask_u_inst, SG_RANGE(inst));
 
@@ -421,11 +558,11 @@ log::PassStats CompositorPass::execute(
 
 	auto& cue_cmds = cue_queue.commands();
 	if (!cue_cmds.empty()) {
-		auto& cue_trs_mass = staging_ctx.cue_trs_mass;
+		auto& cue_trs_mass = staging_ctx.cue_blob_mass;
 
 		for (auto& cmd : cue_cmds) {
-			rdr::CueBlob cue_trs = cue_trs_mass->get_raw(cmd.trs_idx);
-			cmd.trs_idx          = cue_trs_mass->push_staged(cue_trs);
+			rdr::CueBlob cue_trs = cue_trs_mass->get_raw(cmd.blob_idx);
+			cmd.blob_idx         = cue_trs_mass->push_staged(cue_trs);
 		}
 
 		cue_trs_mass->sync();
@@ -433,11 +570,11 @@ log::PassStats CompositorPass::execute(
 
 	auto& overlay_cmds = overlay_queue.commands();
 	if (!overlay_cmds.empty()) {
-		auto& overlay_trs_mass = staging_ctx.orl_trs_mass;
+		auto& overlay_trs_mass = staging_ctx.orl_blob_mass;
 
 		for (auto& cmd : overlay_cmds) {
-			rdr::OverlayBlob trs = overlay_trs_mass->get_raw(cmd.trs_idx);
-			cmd.trs_idx        = overlay_trs_mass->push_staged(trs);
+			rdr::OverlayBlob trs = overlay_trs_mass->get_raw(cmd.blob_idx);
+			cmd.blob_idx         = overlay_trs_mass->push_staged(trs);
 		}
 
 		overlay_trs_mass->sync();
@@ -575,9 +712,9 @@ log::PassStats CompositorPass::execute(
 				sg_apply_pipeline(binding_ctx.pipelines.cue_wire.pipeline);
 
 				sg_bindings bindings {};
-				bindings.views[VIEW_cue_wire_ssbo_trs] = binding_ctx.cue_trs.view;
-				bindings.views[VIEW_cue_wire_ssbo_vtx] = binding_ctx.vtx_ssbo.view;
-				bindings.views[VIEW_cue_wire_ssbo_idx] = binding_ctx.idx_ssbo.view;
+				bindings.views[VIEW_cue_wire_ssbo_trs] = binding_ctx.cue_blob_ssbo.view;
+				bindings.views[VIEW_cue_wire_ssbo_vtx] = binding_ctx.vtx_gen_ssbo.view;
+				bindings.views[VIEW_cue_wire_ssbo_idx] = binding_ctx.idx_gen_ssbo.view;
 
 				bindings.views[VIEW_cue_wire_u_tex_palette]   = binding_ctx.palettes.view;
 				bindings.samplers[SMP_cue_wire_u_smp_palette] =
@@ -602,7 +739,7 @@ log::PassStats CompositorPass::execute(
 				u_cmd.vtx_base           = static_cast<int32_t>(cmd_start.vtx_base);
 				u_cmd.idx_first          = static_cast<int32_t>(cmd_start.idx_first);
 				u_cmd.edges_per_instance = cmd_start.idx_count / 2;
-				u_cmd.base_trs_idx       = static_cast<int32_t>(cmd_start.trs_idx);
+				u_cmd.base_trs_idx       = static_cast<int32_t>(cmd_start.blob_idx);
 
 				sg_apply_uniforms(UB_cue_wire_u_cmd, SG_RANGE(u_cmd));
 
@@ -630,7 +767,7 @@ log::PassStats CompositorPass::execute(
 				sg_bindings bindings {};
 				bindings.vertex_buffers[0]               = binding_ctx.gen_vtx.vtx_buf;
 				bindings.index_buffer                    = binding_ctx.gen_vtx.idx_buf;
-				bindings.views[VIEW_cue_ssbo_trs]        = binding_ctx.cue_trs.view;
+				bindings.views[VIEW_cue_ssbo_trs]        = binding_ctx.cue_blob_ssbo.view;
 				bindings.views[VIEW_cue_u_tex_palette]   = binding_ctx.palettes.view;
 
 				bindings.samplers[SMP_cue_u_smp_palette] =
@@ -663,7 +800,7 @@ log::PassStats CompositorPass::execute(
 					static_cast<int>(cmd_start.idx_count),
 					static_cast<int>(instance_num),
 					static_cast<int>(cmd_start.vtx_base),
-					static_cast<int>(cmd_start.trs_idx)
+					static_cast<int>(cmd_start.blob_idx)
 				);
 
 				pass_stats.draw_calls++;
@@ -715,9 +852,9 @@ log::PassStats CompositorPass::execute(
 				sg_apply_pipeline(binding_ctx.pipelines.overlay_wire.pipeline);
 
 				sg_bindings bindings {};
-				bindings.views[VIEW_overlay_wire_ssbo_trs] = binding_ctx.orl_trs.view;
-				bindings.views[VIEW_overlay_wire_ssbo_vtx] = binding_ctx.vtx_ssbo.view;
-				bindings.views[VIEW_overlay_wire_ssbo_idx] = binding_ctx.idx_ssbo.view;
+				bindings.views[VIEW_overlay_wire_ssbo_trs] = binding_ctx.orl_blob_ssbo.view;
+				bindings.views[VIEW_overlay_wire_ssbo_vtx] = binding_ctx.vtx_gen_ssbo.view;
+				bindings.views[VIEW_overlay_wire_ssbo_idx] = binding_ctx.idx_gen_ssbo.view;
 				
 				sg_apply_bindings(&bindings);
 
@@ -737,7 +874,7 @@ log::PassStats CompositorPass::execute(
 				u_cmd.vtx_base           = static_cast<int32_t>(cmd_start.vtx_base);
 				u_cmd.idx_first          = static_cast<int32_t>(cmd_start.idx_first);
 				u_cmd.edges_per_instance = cmd_start.idx_count / 2;
-				u_cmd.base_trs_idx       = static_cast<int32_t>(cmd_start.trs_idx);
+				u_cmd.base_trs_idx       = static_cast<int32_t>(cmd_start.blob_idx);
 
 				sg_apply_uniforms(UB_overlay_wire_u_cmd, SG_RANGE(u_cmd));
 
@@ -758,7 +895,7 @@ log::PassStats CompositorPass::execute(
 				sg_bindings bindings {};
 				bindings.vertex_buffers[0]            = binding_ctx.gen_vtx.vtx_buf;
 				bindings.index_buffer                 = binding_ctx.gen_vtx.idx_buf;
-				bindings.views[VIEW_overlay_ssbo_trs] = binding_ctx.orl_trs.view;
+				bindings.views[VIEW_overlay_ssbo_trs] = binding_ctx.orl_blob_ssbo.view;
 				
 				sg_apply_bindings(&bindings);
 
@@ -772,7 +909,7 @@ log::PassStats CompositorPass::execute(
 				sg_apply_uniforms(UB_overlay_u_camera, SG_RANGE(u_camera));
 
 				overlay_u_instance_t u_instance {};
-				u_instance.base_instance = static_cast<int>(cmd_start.trs_idx);
+				u_instance.base_instance = static_cast<int>(cmd_start.blob_idx);
 				
 				sg_apply_uniforms(UB_overlay_u_instance, SG_RANGE(u_instance));
 
@@ -781,7 +918,7 @@ log::PassStats CompositorPass::execute(
 					static_cast<int>(cmd_start.idx_count),
 					static_cast<int>(instance_num),
 					static_cast<int>(cmd_start.vtx_base),
-					static_cast<int>(cmd_start.trs_idx)
+					static_cast<int>(cmd_start.blob_idx)
 				);
 
 				pass_stats.draw_calls++;
@@ -1120,7 +1257,7 @@ log::PassStats DebugPass::execute(
 					{v2f32(pen_x + glyph.x_min_px, pen_y + glyph.y_max_px), v2u16{glyph.u_min, glyph.v_max}, line.color}
 				};
 
-				uint16_t indices[6] = { (uint16_t)(base+0), (uint16_t)(base+1), (uint16_t)(base+2), 
+				uint16_t indices[6] = { (uint16_t)(base+0), (uint16_t)(base+1), (uint16_t)(base+2),
                                         (uint16_t)(base+0), (uint16_t)(base+2), (uint16_t)(base+3) };
 
 				vtx_mass.push(vertices, 4, indices, 6);
@@ -1145,6 +1282,222 @@ void DebugPass::resize(const SurfaceInfo& surface_info)
 		-1.0f,
 		1.0f
 	);
+}
+
+
+void EnvironmentPass::execute(
+	const geo::CanonicalShapes& canonical_shapes,
+	BindingContext&             binding_ctx
+)
+{
+	sg_image equirect_src_img = binding_ctx.environment.equirect_src_img;
+
+	if (equirect_src_img.id == SG_INVALID_ID) {
+		return;
+	}
+
+	const auto& box_geo_slice  = canonical_shapes.geo_slice[static_cast<size_t>(geo::CanonicalSubmesh::Box)];
+	const auto& quad_geo_slice = canonical_shapes.geo_slice[static_cast<size_t>(geo::CanonicalSubmesh::Quad)];
+
+	sg_pass_action pass_action_clear {};
+	pass_action_clear.colors[0].load_action  = SG_LOADACTION_CLEAR;
+	pass_action_clear.colors[0].store_action = SG_STOREACTION_STORE;
+	pass_action_clear.colors[0].clear_value  = {0.0f, 0.0f, 0.0f, 1.0f};
+
+	auto make_face_draw_view = [](sg_image target_img, uint32_t face_idx, uint32_t mip_level) -> sg_view
+	{
+		sg_view_desc view_desc {};
+		view_desc.color_attachment.image     = target_img;
+		view_desc.color_attachment.mip_level = mip_level;
+		view_desc.color_attachment.slice     = face_idx;
+		
+		return sg_make_view(&view_desc);
+	};
+
+	const glm::mat4 mtx_P = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	
+	const glm::mat4 mtxs_V[6] = {
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
+
+	sg_sampler smp_linear = binding_ctx.samplers.types[static_cast<size_t>(SamplerType::linear_clamp)];
+
+	sg_bindings bindings_cube {};
+	bindings_cube.vertex_buffers[0] = binding_ctx.gen_vtx.vtx_buf;
+	bindings_cube.index_buffer      = binding_ctx.gen_vtx.idx_buf;
+
+	{
+		sg_view_desc source_view_desc {};
+		source_view_desc.texture.image = equirect_src_img;
+		sg_view source_view = sg_make_view(&source_view_desc);
+
+		bindings_cube.views[VIEW_ibl_equirect_u_equirect]  = source_view;
+		bindings_cube.samplers[SMP_ibl_equirect_u_sampler] = smp_linear;
+
+		for (uint32_t face_index = 0; face_index < 6; ++face_index) {
+			sg_view face_draw_view = make_face_draw_view(binding_ctx.environment.env_cube_img, face_index, 0);
+
+			sg_attachments pass_attachments {};
+			pass_attachments.colors[0] = face_draw_view;
+
+			sg_pass render_pass {};
+			render_pass.attachments = pass_attachments;
+			render_pass.action      = pass_action_clear;
+
+			sg_begin_pass(&render_pass);
+			sg_apply_pipeline(binding_ctx.pipelines.ibl_equirect.pipeline);
+			sg_apply_viewport(0, 0, 512, 512, true);
+			
+			sg_apply_bindings(&bindings_cube);
+
+			ibl_equirect_u_vs_t vs_uniforms {};
+			std::memcpy(vs_uniforms.mtx_VP, glm::value_ptr(mtx_P * mtxs_V[face_index]), sizeof(vs_uniforms.mtx_VP));
+			sg_apply_uniforms(UB_ibl_equirect_u_vs, SG_RANGE(vs_uniforms));
+
+			sg_draw_ex(
+				static_cast<int>(box_geo_slice.idx_first),
+				static_cast<int>(box_geo_slice.idx_count),
+				1,
+				0,
+				0
+			);
+
+			sg_end_pass();
+			sg_destroy_view(face_draw_view);
+		}
+		
+		sg_destroy_view(source_view);
+	}
+
+	{
+		bindings_cube.views[VIEW_ibl_irradiance_u_env_cube]  = binding_ctx.environment.env_view;
+		bindings_cube.samplers[SMP_ibl_irradiance_u_sampler] = smp_linear;
+
+		for (uint32_t face_index = 0; face_index < 6; ++face_index) {
+			sg_view face_draw_view = make_face_draw_view(binding_ctx.environment.irr_cube_img, face_index, 0);
+
+			sg_attachments pass_attachments {};
+			pass_attachments.colors[0] = face_draw_view;
+
+			sg_pass render_pass {};
+			render_pass.attachments = pass_attachments;
+			render_pass.action      = pass_action_clear;
+
+			sg_begin_pass(&render_pass);
+			sg_apply_pipeline(binding_ctx.pipelines.ibl_irradiance.pipeline);
+			sg_apply_viewport(0, 0, 32, 32, true);
+			
+			sg_apply_bindings(&bindings_cube);
+
+			ibl_irradiance_u_vs_t vs_uniforms {};
+			std::memcpy(vs_uniforms.mtx_VP, glm::value_ptr(mtx_P * mtxs_V[face_index]), sizeof(vs_uniforms.mtx_VP));
+			sg_apply_uniforms(UB_ibl_irradiance_u_vs, SG_RANGE(vs_uniforms));
+
+			sg_draw_ex(
+				static_cast<int>(box_geo_slice.idx_first),
+				static_cast<int>(box_geo_slice.idx_count),
+				1,
+				0,
+				0
+			);
+
+			sg_end_pass();
+			sg_destroy_view(face_draw_view);
+		}
+	}
+
+	{
+		bindings_cube.views[VIEW_ibl_prefilter_u_env_cube]  = binding_ctx.environment.env_view;
+		bindings_cube.samplers[SMP_ibl_prefilter_u_sampler] = smp_linear;
+
+		const uint32_t max_mip_levels = 5;
+		
+		for (uint32_t mip_index = 0; mip_index < max_mip_levels; ++mip_index) {
+			
+			uint32_t mip_viewport_size = 128 >> mip_index;
+			float current_roughness    = static_cast<float>(mip_index) / static_cast<float>(max_mip_levels - 1);
+			
+			for (uint32_t face_index = 0; face_index < 6; ++face_index) {
+				sg_view face_draw_view = make_face_draw_view(binding_ctx.environment.pref_cube_img, face_index, mip_index);
+
+				sg_attachments pass_attachments {};
+				pass_attachments.colors[0] = face_draw_view;
+
+				sg_pass render_pass {};
+				render_pass.attachments = pass_attachments;
+				render_pass.action      = pass_action_clear;
+
+				sg_begin_pass(&render_pass);
+				sg_apply_pipeline(binding_ctx.pipelines.ibl_prefilter.pipeline);
+				sg_apply_viewport(0, 0, static_cast<int>(mip_viewport_size), static_cast<int>(mip_viewport_size), true);
+				
+				sg_apply_bindings(&bindings_cube);
+
+				ibl_prefilter_u_vs_t vs_uniforms {};
+				std::memcpy(vs_uniforms.mtx_VP, glm::value_ptr(mtx_P * mtxs_V[face_index]), sizeof(vs_uniforms.mtx_VP));
+				sg_apply_uniforms(UB_ibl_prefilter_u_vs, SG_RANGE(vs_uniforms));
+
+				ibl_prefilter_u_fs_t fs_uniforms {};
+				fs_uniforms.roughness = current_roughness;
+				sg_apply_uniforms(UB_ibl_prefilter_u_fs, SG_RANGE(fs_uniforms));
+
+				sg_draw_ex(
+					static_cast<int>(box_geo_slice.idx_first),
+					static_cast<int>(box_geo_slice.idx_count),
+					1,
+					0,
+					0
+				);
+
+				sg_end_pass();
+				sg_destroy_view(face_draw_view);
+			}
+		}
+	}
+
+	{
+		sg_view_desc lut_view_desc {};
+		lut_view_desc.color_attachment.image = binding_ctx.environment.brdf_lut_img;
+		sg_view lut_draw_view = sg_make_view(&lut_view_desc);
+
+		sg_attachments pass_attachments {};
+		pass_attachments.colors[0] = lut_draw_view;
+
+		sg_pass render_pass {};
+		render_pass.attachments = pass_attachments;
+		render_pass.action      = pass_action_clear;
+
+		sg_begin_pass(&render_pass);
+		sg_apply_pipeline(binding_ctx.pipelines.ibl_brdf.pipeline);
+		sg_apply_viewport(0, 0, 512, 512, true);
+
+		sg_bindings bindings_quad {};
+		bindings_quad.vertex_buffers[0] = binding_ctx.gen_vtx.vtx_buf;
+		bindings_quad.index_buffer      = binding_ctx.gen_vtx.idx_buf;
+		
+		sg_apply_bindings(&bindings_quad);
+
+		sg_draw_ex(
+			static_cast<int>(quad_geo_slice.idx_first),
+			static_cast<int>(quad_geo_slice.idx_count),
+			1,
+			0,
+			0
+		);
+
+		sg_end_pass();
+		sg_destroy_view(lut_draw_view);
+	}
+
+	sg_commit();
+	
+	sg_destroy_image(binding_ctx.environment.equirect_src_img);
+	binding_ctx.environment.equirect_src_img.id = SG_INVALID_ID;
 }
 
 

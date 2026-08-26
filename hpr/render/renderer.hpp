@@ -40,7 +40,12 @@ public:
 
 	bool on_event(Event& event);
 	void set_scene_context(const scn::SceneContext& scene_ctx);
-	void set_render_context(BindingContext binding_ctx, StagingContext staging_ctx);
+
+	void set_render_context(
+		BindingContext              binding_ctx,
+		StagingContext              staging_ctx,
+		const geo::CanonicalShapes& shapes
+	);
 
 	void shutdown();
 
@@ -49,6 +54,9 @@ public:
 
 	RenderQueue<SceneDrawCmd>& scene_queue()
 	{ return m_scene_queue; }
+
+	RenderQueue<AnimDrawCmd>& anim_queue()
+	{ return m_anim_queue; }
 
 	RenderQueue<UiDrawCmd>& ui_queue()
 	{ return m_ui_queue; }
@@ -75,6 +83,7 @@ private:
 	SurfaceInfo m_surface_info {};
 
 	RenderQueue<SceneDrawCmd>   m_scene_queue;
+	RenderQueue<AnimDrawCmd>    m_anim_queue;
 	RenderQueue<ReplayDrawCmd>  m_replay_queue;
 	RenderQueue<UiDrawCmd>      m_ui_queue;
 	RenderQueue<DebugDrawCmd>   m_debug_queue;
@@ -86,11 +95,12 @@ private:
 	StagingContext    m_staging_ctx {};
 	scn::SceneContext m_scene_ctx   {};
 
-	ScenePass      m_scene_pass;
-	OutlinePass    m_outline_pass;
-	CompositorPass m_compositor_pass;
-	UiPass         m_ui_pass;
-	DebugPass      m_debug_pass;
+	ScenePass       m_scene_pass;
+	OutlinePass     m_outline_pass;
+	CompositorPass  m_compositor_pass;
+	UiPass          m_ui_pass;
+	DebugPass       m_debug_pass;
+	EnvironmentPass m_environment_pass;
 
 	log::StatsHarvester& m_harvester;
 };

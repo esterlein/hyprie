@@ -5,14 +5,15 @@
 #include "action.hpp"
 #include "event_dispatcher.hpp"
 
+#include "raycast.hpp"
 #include "gizmo_query.hpp"
-#include "scene_query.hpp"
+
 #include "render_context.hpp"
 
 #include "editor_data.hpp"
 #include "pixel_utils.hpp"
 
-namespace hpr {
+namespace hpr::lyr {
 
 
 GizmoLayer::GizmoLayer(
@@ -59,17 +60,17 @@ bool GizmoLayer::on_event(Event& event)
 }
 
 
-bool GizmoLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const Action> actions)
+bool GizmoLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const io::Action> actions)
 {
 	const auto& draw_view = scene_ctx.draw_view;
 
-	for (const Action& action : actions) {
+	for (const io::Action& action : actions) {
 
 		switch (action.kind) {
 
-		case ActionKind::SelectClick:
+		case io::ActionKind::SelectClick:
 		{
-			const auto& payload = std::get<SelectClickAction>(action.payload);
+			const auto& payload = std::get<io::SelectClickAction>(action.payload);
 
 			if (m_entity == ecs::ctx::invalid_entity)
 				break;
@@ -133,14 +134,14 @@ bool GizmoLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const 
 			return true;
 		}
 
-		case ActionKind::GizmoUpdate:
+		case io::ActionKind::GizmoUpdate:
 		{
 			if (!m_active || m_entity == ecs::ctx::invalid_entity)
 				break;
 
 			HPR_ASSERT(m_cmd_stream);
 
-			const auto& payload = std::get<GizmoUpdateAction>(action.payload);
+			const auto& payload = std::get<io::GizmoUpdateAction>(action.payload);
 			m_snapping = payload.snapping;
 
 			vec3 axis_x = {1.0f, 0.0f, 0.0f};
@@ -664,7 +665,7 @@ bool GizmoLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const 
 		}
 		break;
 
-		case ActionKind::GizmoEnd:
+		case io::ActionKind::GizmoEnd:
 		{
 			m_active      = false;
 			m_active_axis = edt::GizmoAxis::None;
@@ -674,33 +675,33 @@ bool GizmoLayer::on_actions(const scn::SceneContext& scene_ctx, std::span<const 
 		}
 		break;
 
-		case ActionKind::SnapOn:
+		case io::ActionKind::SnapOn:
 		{
 			m_snapping = true;
 		}
 		break;
 
-		case ActionKind::SnapOff:
+		case io::ActionKind::SnapOff:
 		{
 			m_snapping = false;
 		}
 		break;
 
-		case ActionKind::GizmoSetTranslate:
+		case io::ActionKind::GizmoSetTranslate:
 		{
 			if (!m_active)
 				m_mode = edt::GizmoMode::Translate;
 		}
 		break;
 
-		case ActionKind::GizmoSetRotate:
+		case io::ActionKind::GizmoSetRotate:
 		{
 			if (!m_active)
 				m_mode = edt::GizmoMode::Rotate;
 		}
 		break;
 
-		case ActionKind::GizmoSetScale:
+		case io::ActionKind::GizmoSetScale:
 		{
 			if (!m_active)
 				m_mode = edt::GizmoMode::Scale;
@@ -718,7 +719,7 @@ void GizmoLayer::on_update(scn::SceneContext& scn_ctx, float delta_time)
 	(void) scn_ctx;
 	(void) delta_time;
 
-	m_staging_ctx.orl_trs_mass->clear();
+	m_staging_ctx.orl_blob_mass->clear();
 }
 
 
@@ -754,7 +755,7 @@ void GizmoLayer::on_submit(const scn::SceneContext& scene_ctx, uint32_t layer_id
 	const vec4 col_y = vec4(0.320f, 0.980f, 0.320f, gizmo_style.alpha_axis);
 	const vec4 col_z = vec4(0.320f, 0.540f, 1.000f, gizmo_style.alpha_axis);
 
-	auto& overlay_trs_mass = m_staging_ctx.orl_trs_mass;
+	auto& overlay_trs_mass = m_staging_ctx.orl_blob_mass;
 
 	auto push =
 	[
@@ -782,7 +783,7 @@ void GizmoLayer::on_submit(const scn::SceneContext& scene_ctx, uint32_t layer_id
 			.vtx_base  = m_gizmo_primitives.vtx_base,
 			.idx_first = idx_first,
 			.idx_count = geo_range.idx_count,
-			.trs_idx   = trs_idx,
+			.blob_idx   = trs_idx,
 			.flags     = overlay_flag
 		});
 	};
@@ -842,5 +843,5 @@ void GizmoLayer::on_result(Event& event)
 	(void) event;
 }
 
-} // hpr
+} // hpr::lyr
 

@@ -32,6 +32,7 @@ Renderer::Renderer(
 	: m_hub             {hub}
 	, m_surface_info    {surface_info}
 	, m_scene_queue     {1024}
+	, m_anim_queue      {1024}
 	, m_replay_queue    {1024}
 	, m_ui_queue        {1024}
 	, m_debug_queue     {256}
@@ -60,6 +61,7 @@ void Renderer::frame()
 
 	stats.scene = m_scene_pass.execute(
 		m_scene_queue,
+		m_anim_queue,
 		m_replay_queue,
 		m_scene_ctx,
 		m_binding_ctx,
@@ -131,16 +133,24 @@ void Renderer::set_scene_context(const scn::SceneContext& scn_ctx)
 }
 
 
-void Renderer::set_render_context(BindingContext binding_ctx, StagingContext staging_ctx)
+void Renderer::set_render_context(
+	BindingContext              binding_ctx,
+	StagingContext              staging_ctx,
+	const geo::CanonicalShapes& shapes
+)
 {
 	m_binding_ctx = std::move(binding_ctx);
 	m_staging_ctx = std::move(staging_ctx);
+
+	m_scene_pass.set_canonical_shapes(shapes);
+	m_environment_pass.execute(shapes, m_binding_ctx);
 }
 
 
 void Renderer::clear_frame()
 {
 	m_scene_queue.clear();
+	m_anim_queue.clear();
 	m_fx_queue.clear();
 	m_overlay_queue.clear();
 	m_ui_queue.clear();

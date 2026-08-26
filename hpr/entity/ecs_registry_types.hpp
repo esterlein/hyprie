@@ -14,6 +14,7 @@ using MainRegistry = ecs::Registry <
 	ecs::HierarchyComponent,
 	ecs::NameComponent,
 	ecs::ModelComponent,
+	ecs::AnimComponent,
 	ecs::OccluderComponent,
 	ecs::CameraComponent,
 	ecs::LightComponent

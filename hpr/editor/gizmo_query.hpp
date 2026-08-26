@@ -4,7 +4,7 @@
 #include "math.hpp"
 #include "action.hpp"
 #include "editor_data.hpp"
-#include "scene_query.hpp"
+#include "raycast_data.hpp"
 
 
 namespace hpr::edt {

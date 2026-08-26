@@ -76,6 +76,7 @@ struct EntityDoc
 struct SceneDoc
 {
 	vec3 ambient_rgb;
+	std::string environment;
 
 	mtp::vault<EntityDoc, mtp::default_set> entity_docs;
 };

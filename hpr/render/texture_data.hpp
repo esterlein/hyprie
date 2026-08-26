@@ -25,8 +25,8 @@ inline constexpr uint32_t num_tex_arrays = 12U;
 
 struct Texture
 {
-	uint32_t array  {0xFFFFFFFF};
-	uint32_t slice  {0xFFFFFFFF};
+	uint32_t array  {0xFFFFFFFFU};
+	uint32_t slice  {0xFFFFFFFFU};
 	uint32_t width  {0};
 	uint32_t height {0};
 };
@@ -114,6 +114,20 @@ struct Atlas
 	sg_view    view   {};
 	uint32_t   width  {0};
 	uint32_t   height {0};
+};
+
+
+struct Environment
+{
+	sg_image env_cube;
+	sg_image irr_cube;
+	sg_image pref_cube;
+	sg_image brdf_lut;
+
+	sg_view env_view;
+	sg_view irr_view;
+	sg_view pref_view;
+	sg_view brdf_view;
 };
 
 

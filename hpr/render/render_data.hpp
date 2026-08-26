@@ -1,17 +1,18 @@
 #pragma once
 
-#include "geometry_data.hpp"
 #include "hprint.hpp"
 
-#include <array>
-
-#include "sokol_gfx.h"
 #include "mtp_memory.hpp"
 
 #include "math.hpp"
 #include "handle.hpp"
 
 #include "texture_data.hpp"
+#include "geometry_data.hpp"
+
+#include "sokol_gfx.h"
+
+#include <array>
 
 
 namespace hpr::rdr {
@@ -134,8 +135,20 @@ struct Model
 	mtp::vault<vec3,     mtp::default_set> twin_positions;
 	mtp::vault<uint32_t, mtp::default_set> twin_indices;
 
-	uint32_t occludee_hull_base_idx {0xFFFFFFFF};
-	uint32_t occluder_twin_idx      {0xFFFFFFFF};
+	uint32_t occludee_hull_base_idx {0xFFFFFFFFU};
+	uint32_t occluder_twin_idx      {0xFFFFFFFFU};
+
+	uint32_t skel_base_idx {0xFFFFFFFFU};
+	uint32_t clip_base_idx {0xFFFFFFFFU};
+	uint32_t bone_count    {0U};
+
+	uint32_t spatial_vtx_base {0xFFFFFFFFU};
+	uint32_t spatial_idx_base {0xFFFFFFFFU};
+	uint32_t blas_root_idx    {0xFFFFFFFFU};
+
+	mtp::vault<uint32_t, mtp::default_set> mesh_vtx_bases;
+	mtp::vault<uint32_t, mtp::default_set> mesh_idx_firsts;
+	mtp::vault<uint32_t, mtp::default_set> material_ssbo_idxs;
 };
 
 

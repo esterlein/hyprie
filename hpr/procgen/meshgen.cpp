@@ -97,6 +97,46 @@ Geoslice Meshgen::box(const Box& box)
 }
 
 
+Geoslice Meshgen::box_wire(const Box& box)
+{
+	const vec3 bounds_min = box.min;
+	const vec3 bounds_max = box.max;
+
+	const uint32_t vtx_base = static_cast<uint32_t>(positions.size());
+	const uint32_t idx_base = static_cast<uint32_t>(indices.size());
+
+	positions.emplace_back(vec3 {bounds_min.x, bounds_min.y, bounds_min.z});
+	positions.emplace_back(vec3 {bounds_max.x, bounds_min.y, bounds_min.z});
+	positions.emplace_back(vec3 {bounds_max.x, bounds_max.y, bounds_min.z});
+	positions.emplace_back(vec3 {bounds_min.x, bounds_max.y, bounds_min.z});
+	positions.emplace_back(vec3 {bounds_min.x, bounds_min.y, bounds_max.z});
+	positions.emplace_back(vec3 {bounds_max.x, bounds_min.y, bounds_max.z});
+	positions.emplace_back(vec3 {bounds_max.x, bounds_max.y, bounds_max.z});
+	positions.emplace_back(vec3 {bounds_min.x, bounds_max.y, bounds_max.z});
+
+	const uint32_t edge_indices[24] = {
+		0, 1, 1, 2, 2, 3, 3, 0,
+		4, 5, 5, 6, 6, 7, 7, 4,
+		0, 4, 1, 5, 2, 6, 3, 7
+	};
+
+	for (uint32_t i = 0; i < 24; ++i) {
+		indices.emplace_back(vtx_base + edge_indices[i]);
+	}
+
+	for (uint32_t i = 0; i < 8; ++i) {
+		uvs.emplace_back(vec2 {0.0f, 0.0f});
+	}
+
+	return {
+		.vtx_base  = vtx_base,
+		.vtx_count = 8,
+		.idx_first = idx_base,
+		.idx_count = 24
+	};
+}
+
+
 Geoslice Meshgen::ring(const Ring& ring)
 {
 	HPR_ASSERT_MSG(ring.segment_count > 0,

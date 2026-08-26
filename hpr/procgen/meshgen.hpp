@@ -19,6 +19,7 @@ struct Meshgen
 
 	Geoslice quad(const Quad& quad);
 	Geoslice box(const Box& box);
+	Geoslice box_wire(const Box& box);
 
 	Geoslice ring(const Ring& ring);
 	Geoslice ring_solid(const RingSolid& ring_solid);

@@ -25,8 +25,10 @@ enum class LightType : uint8_t
 
 struct SceneContext
 {
-	rdr::DrawView draw_view  {};
+	rdr::DrawView draw_view {};
 	rdr::LightSet light_set {};
+
+	float delta_time {0.0f};
 };
 
 

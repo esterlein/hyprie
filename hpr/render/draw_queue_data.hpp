@@ -39,7 +39,23 @@ struct SceneDrawCmd
 	uint32_t vtx_base;
 	uint32_t idx_first;
 	uint32_t idx_count;
-	uint32_t trs_idx;
+	uint32_t blob_idx;
+
+	uint32_t mat_idx;
+
+	uint8_t  flags;
+};
+
+
+struct AnimDrawCmd
+{
+	uint64_t sort_key;
+	uint32_t layer_idx;
+
+	uint32_t vtx_base;
+	uint32_t idx_first;
+	uint32_t idx_count;
+	uint32_t blob_idx;
 
 	uint32_t mat_idx;
 
@@ -54,7 +70,7 @@ struct ReplayDrawCmd
 	uint32_t vtx_base;
 	uint32_t idx_first;
 	uint32_t idx_count;
-	uint32_t trs_idx;
+	uint32_t blob_idx;
 };
 
 
@@ -66,7 +82,7 @@ struct CueDrawCmd
 	uint32_t vtx_base;
 	uint32_t idx_first;
 	uint32_t idx_count;
-	uint32_t trs_idx;
+	uint32_t blob_idx;
 
 	uint32_t cue_mask;
 	uint32_t tilemap_slice;
@@ -82,7 +98,7 @@ struct OverlayDrawCmd
 	uint32_t vtx_base;
 	uint32_t idx_first;
 	uint32_t idx_count;
-	uint32_t trs_idx;
+	uint32_t blob_idx;
 
 	uint32_t flags;
 };

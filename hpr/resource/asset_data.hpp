@@ -6,6 +6,7 @@
 #include "math.hpp"
 #include "handle.hpp"
 #include "geometry_data.hpp"
+#include "resource_ingest.hpp"
 
 #include "cgltf.h"
 
@@ -19,29 +20,6 @@ struct GltfResource
 };
 
 
-enum class AttrFormat : uint8_t
-{
-	undefined,
-	float32,
-	float16,
-	uint32,
-	uint16,
-	uint8,
-};
-
-
-enum class AttrType : uint8_t
-{
-	pos,
-	nrm,
-	tan,
-	uv0,
-	uv1,
-	rgb,
-	count
-};
-
-
 struct VtxAttribute
 {
 	mtp::vault<uint8_t, mtp::default_set> blob;
@@ -51,23 +29,25 @@ struct VtxAttribute
 };
 
 
-struct ImageResource
-{
-	uint32_t width    {0};
-	uint32_t height   {0};
-	uint32_t channels {0};
-
-	mtp::vault<uint8_t, mtp::default_set> pixels;
-};
-
-
 enum : uint32_t
 {
 	tex_albedo = 0,
 	tex_normal,
 	tex_ormh,
 	tex_emissive,
-	max_tex_per_mat
+	max_tex_per_mat,
+	tex_environment
+};
+
+
+struct ImageResource
+{
+	uint32_t width    {0};
+	uint32_t height   {0};
+	uint32_t channels {0};
+	uint32_t type     {tex_albedo};
+
+	mtp::vault<uint8_t, mtp::default_set> pixels;
 };
 
 
@@ -134,6 +114,30 @@ struct ImportMesh
 };
 
 
+struct ImportAnimTrack
+{
+	uint32_t node_idx;
+	mtp::vault<float, mtp::default_set> times;
+	mtp::vault<vec3,  mtp::default_set> translations;
+	mtp::vault<quat,  mtp::default_set> rotations;
+};
+
+
+struct ImportAnimClip
+{
+	float duration_ticks {0.0f};
+	mtp::vault<ImportAnimTrack, mtp::default_set> tracks;
+};
+
+
+struct ImportSkeleton
+{
+	mtp::vault<uint32_t, mtp::default_set> joint_node_idxs;
+	mtp::vault<mat4,     mtp::default_set> mtxs_inv_bind;
+	mtp::vault<mat4,     mtp::default_set> mtxs_L_rest;
+};
+
+
 struct ImportModel
 {
 	mtp::vault<ImportMesh,                    mtp::default_set> meshes;
@@ -153,6 +157,9 @@ struct ImportModel
 
 	mtp::vault<vec3,     mtp::default_set> twin_positions;
 	mtp::vault<uint32_t, mtp::default_set> twin_indices;
+
+	mtp::vault<ImportSkeleton, mtp::default_set> skins;
+	mtp::vault<ImportAnimClip, mtp::default_set> animations;
 };
 
 
